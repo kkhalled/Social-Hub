@@ -135,7 +135,7 @@ export default function PostDetails({
         <figure className="w-full bg-linear-to-br from-gray-100 to-gray-50 relative group">
           <img
             src={image}
-            className="w-full max-h-125 object-cover group-hover:scale-[1.02] transition-transform duration-700"
+            className="w-full max-h-125 object-cover  transition-transform duration-700"
             alt="Post content"
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
