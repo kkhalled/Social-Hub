@@ -10,7 +10,7 @@ import { AuthContext } from '../context/AuthContext';
 
 export default function useLogIn(){
 
-  const {token ,setToken} = useContext(AuthContext);
+  const {token, setToken, setUser} = useContext(AuthContext);
 
     const [invalidPassword, setinvalidPassword] = useState(null);
   const navgiate = useNavigate();
@@ -52,11 +52,25 @@ export default function useLogIn(){
       if (data.message === "success") {
 
         console.log(data);
-        localStorage.setItem("token",data.token)
-        setToken(
-          data.token
-        )
+        localStorage.setItem("token", data.token);
+        setToken(data.token);
         
+        // Store user data if available in the response
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+          setUser(data.user);
+        } else {
+          // If user data not in signin response, fetch it
+          try {
+            const profileResponse = await axiosInstance.get("/users/profile-data");
+            if (profileResponse.data.message === "success") {
+              localStorage.setItem("user", JSON.stringify(profileResponse.data.user));
+              setUser(profileResponse.data.user);
+            }
+          } catch (profileError) {
+            console.error("Error fetching profile:", profileError);
+          }
+        }
         
         toast.success("Welcome Back");
         setTimeout(() => {
@@ -64,8 +78,9 @@ export default function useLogIn(){
         }, 500);
       }
     } catch (error) {
-      setinvalidPassword(error.response.data.error);
+      setinvalidPassword(error.response?.data?.error || "Login failed. Please check your credentials.");
       console.log(error);
+      toast.error(error.response?.data?.error || "Login failed. Please try again.");
     }
   }
 
