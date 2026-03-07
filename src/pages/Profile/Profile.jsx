@@ -15,6 +15,8 @@ import axiosInstance from "../../api/axiosInstance";
 import { AuthContext } from "../../context/AuthContext";
 import defaultAvatar from "../../assets/user.png";
 import usePassword from "../../hooks/usePassword";
+import { uploadProfilePhoto } from "../../api/usersApi";
+import { toast } from "react-toastify";
 
 export default function Profile() {
   const { user, token, setUser } = useContext(AuthContext);
@@ -41,7 +43,7 @@ export default function Profile() {
     const MAX_SIZE = 4 * 1024 * 1024;
 
     if (file.size > MAX_SIZE) {
-      console.error("Image exceeds 4MB limit");
+      toast.error("Image exceeds 4MB limit");
       return;
     }
 
@@ -49,18 +51,16 @@ export default function Profile() {
     formData.append("photo", file);
 
     try {
-      const { data } = await axiosInstance.put(
-        "/users/upload-photo",
-        formData
-      );
-      console.log(data);
-
-      if (data.message === "success") {
-        // setUser(data.user);
-        localStorage.setItem("user", JSON.stringify(data.user));
+      const response = await uploadProfilePhoto(formData);
+      
+      if (response.message === "success") {
+        setUser(response.user);
+        localStorage.setItem("user", JSON.stringify(response.user));
+        toast.success("Profile photo updated successfully!");
       }
     } catch (error) {
       console.error("Upload photo error:", error);
+      toast.error("Failed to upload photo");
     }
   }
 

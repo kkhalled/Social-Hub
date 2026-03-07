@@ -2,24 +2,30 @@ import { createContext, useContext, useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { AuthContext } from "./AuthContext";
 import { toast } from "react-toastify";
+import { getAllPosts as getAllPostsApi, getHomeFeed } from "../api/postsApi";
 
 export const PostsContext = createContext(null);
 
 export function PostsProvider({ children }) {
   const { token } = useContext(AuthContext);
   const [posts, setPosts] = useState(null);
+  const [feedType, setFeedType] = useState("all"); // "all" or "following"
 
-  async function getAllPosts() {
+  async function getAllPosts(type = "all") {
     try {
-      const { data } = await axiosInstance.get(
-        "/posts?page=1&limit=50"
-      );
+      let response;
+      if (type === "following") {
+        response = await getHomeFeed(true, 1, 50);
+      } else {
+        response = await getAllPostsApi(1, 50);
+      }
 
-      if (data.message === "success") {
-        setPosts([...data.posts].reverse());
+      if (response.message === "success") {
+        setPosts([...response.posts].reverse());
       }
     } catch (error) {
       console.error(error);
+      toast.error("Failed to load posts");
     }
   }
 
@@ -40,27 +46,27 @@ export function PostsProvider({ children }) {
   }
 
   // Update a specific post's comments in the feed
- function updatePostComments(postId, newComment) {
-  setPosts(prev => {
-    if (!prev) return prev;
+  function updatePostComments(postId, newComment) {
+    setPosts(prev => {
+      if (!prev) return prev;
 
-    return prev.map(post =>
-      post._id === postId
-        ? {
-            ...post,
-            comments: [...(post.comments || []), newComment],
-          }
-        : post
-    );
-  });
-}
+      return prev.map(post =>
+        post._id === postId
+          ? {
+              ...post,
+              comments: [...(post.comments || []), newComment],
+            }
+          : post
+      );
+    });
+  }
 
   useEffect(() => {
-    if (token) getAllPosts();
-  }, [token]);
+    if (token) getAllPosts(feedType);
+  }, [token, feedType]);
 
   return (
-    <PostsContext.Provider value={{ posts, getAllPosts, deletePost, updatePostComments }}>
+    <PostsContext.Provider value={{ posts, getAllPosts, deletePost, updatePostComments, feedType, setFeedType }}>
       {children}
     </PostsContext.Provider>
   );

@@ -19,7 +19,7 @@ import axiosInstance from "../../api/axiosInstance";
 import { AuthContext } from "./../../context/AuthContext";
 import { Link, useNavigate } from "react-router";
 import { PostsContext } from "../../context/PostProvider";
-import { toggleLikePost, toggleBookmarkPost } from "../../api/postsApi";
+import { toggleLikePost, toggleBookmarkPost, sharePost } from "../../api/postsApi";
 import { toast } from "react-toastify";
 import { faBookmark as faBookmarkSolid } from "@fortawesome/free-solid-svg-icons";
 import { faBookmark } from "@fortawesome/free-regular-svg-icons";
@@ -77,6 +77,23 @@ export default function PostDetails({
     } catch (error) {
       console.error("Error toggling bookmark:", error);
       toast.error("Failed to bookmark post");
+    }
+  };
+
+  // Handle share post
+  const handleShare = async () => {
+    try {
+      const response = await sharePost(id);
+      if (response.message === "success") {
+        toast.success("Post shared successfully!");
+        // Copy link to clipboard
+        const postUrl = `${window.location.origin}/post/${id}`;
+        navigator.clipboard.writeText(postUrl);
+        toast.info("Link copied to clipboard");
+      }
+    } catch (error) {
+      console.error("Error sharing post:", error);
+      toast.error("Failed to share post");
     }
   };
 
@@ -229,7 +246,9 @@ export default function PostDetails({
               className="text-lg group-hover:scale-125 group-hover:text-green-600 transition-all duration-300 relative z-10"
             />
             <span className="group-hover:text-green-600 relative z-10">
-              Comment
+              Comm
+            onClick={handleShare}
+            ent
             </span>
           </button>
 

@@ -1,12 +1,14 @@
 import React, { useState, useContext } from "react";
 import user from "../../assets/user.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faXmark, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
+import { faHeart } from "@fortawesome/free-regular-svg-icons";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import axiosInstance from "../../api/axiosInstance";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
+import { toggleLikeComment, createReply, getCommentReplies } from "../../api/commentsApi";
 
 export default function CommentCard({
   commentCreatorName,
@@ -21,8 +23,16 @@ export default function CommentCard({
 }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const { token } = useContext(AuthContext);
-
   const [updatedContent, setUpdatedContent] = useState(content);
+  
+  // Like and reply state
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [replies, setReplies] = useState([]);
+  const [showReplies, setShowReplies] = useState(false);
+  const [repliesCount, setRepliesCount] = useState(0);
 
   const validationSchema = Yup.object({
     content: Yup.string()
@@ -71,24 +81,72 @@ export default function CommentCard({
   };
 
   // delete
-async function deleteComment() {
-  try {
-    const { data } = await axiosInstance.delete(
-      `/posts/${postId}/comments/${commentId}`
-    );
-
-    if (data.message === "success") {
-      toast.success("Comment deleted");
-
-      setCommentsUpdated(prev =>
-        prev.filter(comment => comment._id !== commentId)
+  async function deleteComment() {
+    try {
+      const { data } = await axiosInstance.delete(
+        `/posts/${postId}/comments/${commentId}`
       );
+
+      if (data.message === "success") {
+        toast.success("Comment deleted");
+
+        setCommentsUpdated(prev =>
+          prev.filter(comment => comment._id !== commentId)
+        );
+      }
+    } catch (error) {
+      console.log("failed delete comment", error);
+      toast.error("failed delete comment");
     }
-  } catch (error) {
-    console.log("failed delete comment", error);
-    toast.error("failed delete comment");
   }
-}
+
+  // Handle like toggle
+  const handleLike = async () => {
+    try {
+      const response = await toggleLikeComment(postId, commentId);
+      if (response.message === "success") {
+        setIsLiked(!isLiked);
+        setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      toast.error("Failed to like comment");
+    }
+  };
+
+  // Handle reply submission
+  const handleReplySubmit = async (e) => {
+    e.preventDefault();
+    if (!replyContent.trim()) return;
+
+    try {
+      const response = await createReply(postId, commentId, replyContent);
+      if (response.message === "success") {
+        toast.success("Reply added");
+        setReplyContent("");
+        setShowReplyForm(false);
+        // Refresh replies
+        loadReplies();
+        setRepliesCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error adding reply:", error);
+      toast.error("Failed to add reply");
+    }
+  };
+
+  // Load replies
+  const loadReplies = async () => {
+    try {
+      const response = await getCommentReplies(postId, commentId);
+      if (response.replies) {
+        setReplies(response.replies);
+        setShowReplies(true);
+      }
+    } catch (error) {
+      console.error("Error loading replies:", error);
+    }
+  };
 
 
   return (
@@ -122,8 +180,18 @@ async function deleteComment() {
 
           {/* Meta actions */}
           <div className="flex items-center gap-4 text-xs px-2">
-            <button className="text-gray-500 hover:text-blue-600 font-medium transition-colors hover:underline">
-              Like
+            <button 
+              onClick={handleLike}
+              className={`flex items-center gap-1 font-medium transition-colors hover:underline ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}>
+              <FontAwesomeIcon icon={isLiked ? faHeartSolid : faHeart} />
+              {isLiked ? 'Liked' : 'Like'}
+            </button>
+
+            <button
+              onClick={() => setShowReplyForm(!showReplyForm)}
+              className="text-gray-500 hover:text-blue-600 font-medium transition-colors hover:underline"
+            >
+              Reply
             </button>
 
             <button
@@ -134,15 +202,93 @@ async function deleteComment() {
             </button>
             <button
               onClick={deleteComment}
-              className="text-gray-500 hover:text-blue-600 font-medium transition-colors hover:underline"
+              className="text-gray-500 hover:text-red-600 font-medium transition-colors hover:underline"
             >
-              delete
+              Delete
             </button>
-            <span className="text-gray-400">·</span>
-            <button className="text-gray-400 hover:text-gray-600 transition-colors">
-              0 likes
-            </button>
+            
+            {likesCount > 0 && (
+              <>
+                <span className="text-gray-400">·</span>
+                <span className="text-gray-400">
+                  {likesCount} {likesCount === 1 ? 'like' : 'likes'}
+                </span>
+              </>
+            )}
+
+            {repliesCount > 0 && (
+              <>
+                <span className="text-gray-400">·</span>
+                <button 
+                  onClick={showReplies ? () => setShowReplies(false) : loadReplies}
+                  className="text-gray-500 hover:text-blue-600 transition-colors"
+                >
+                  {showReplies ? 'Hide' : 'View'} {repliesCount} {repliesCount === 1 ? 'reply' : 'replies'}
+                </button>
+              </>
+            )}
           </div>
+
+          {/* Reply Form */}
+          {showReplyForm && (
+            <form onSubmit={handleReplySubmit} className="mt-2 px-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Reply
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReplyForm(false);
+                    setReplyContent("");
+                  }}
+                  className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Replies List */}
+          {showReplies && replies.length > 0 && (
+            <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-200">
+              {replies.map((reply) => (
+                <div key={reply._id} className="flex gap-2">
+                  <img
+                    src={reply.commentCreator?.photo?.includes("undefined") ? user : reply.commentCreator?.photo || user}
+                    alt="Reply avatar"
+                    className="size-6 rounded-full object-cover shadow-sm"
+                  />
+                  <div className="flex-1">
+                    <div className="bg-gray-50 rounded-lg px-3 py-2">
+                      <div className="flex items-baseline gap-2 mb-0.5">
+                        <span className="font-semibold text-gray-900 text-xs">
+                          {reply.commentCreator?.name || 'User'}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(reply.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-xs">{reply.content}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
         </div>
       </div>
 
