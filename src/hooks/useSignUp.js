@@ -56,13 +56,8 @@ export default function useSignUp(){
 
   async function handleSubmit(values) {
     try {
-      const options = {
-        url: "/users/signup",
-        method: "POST",
-        data: values,
-      };
-
-      let { data } = await axiosInstance.request(options);
+      // POST to /users/signup
+      const { data } = await axiosInstance.post("/users/signup", values);
 
       if (data.message === "success") {
         toast.success("Account created successfully!");

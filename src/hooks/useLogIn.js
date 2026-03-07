@@ -17,7 +17,7 @@ export default function useLogIn(){
   const passwordRegex =
     /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-]).{8,}$/;
 
-  const signUpSchema = yup.object({
+  const signInSchema = yup.object({
 
     email: yup
       .string()
@@ -50,7 +50,6 @@ export default function useLogIn(){
       let { data } = await axiosInstance.request(options);
 
       if (data.message === "success") {
-
         console.log(data);
         localStorage.setItem("token", data.token);
         setToken(data.token);
@@ -92,7 +91,7 @@ export default function useLogIn(){
   
     },
 
-    validationSchema: signUpSchema,
+    validationSchema : signInSchema,
 
     onSubmit: handleSubmit,
   });

@@ -36,13 +36,8 @@ export default function usePassword({setShowPasswordModal}) {
 
   async function handleSubmit(values) {
     try {
-      const options = {
-        url: "/users/change-password",
-        method: "PATCH",
-        data: values,
-      };
-
-      let { data } = await axiosInstance.request(options);
+      // PATCH to /users/change-password
+      const { data } = await axiosInstance.patch("/users/change-password", values);
       console.log(data);
       
 
