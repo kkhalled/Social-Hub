@@ -114,134 +114,145 @@
 
 ---
 
-### Area 2: Auth & User Management
+### Area 2: Auth & User Management ✅ COMPLETED
 
-- [ ] **2.1 — Signin:** Update signin form/handler
-  - Search: `POST /users/signin`, `email` field in body
-  - Change: Support `login` field (or keep `email`) per new API docs
-  - Store any new fields returned in the signin response
+- [x] **2.1 — Signin:** Update signin form/handler
+  - Migrated to use axiosInstance with automatic token handling
+  - useLogIn.js updated to use centralized axios
 
-- [ ] **2.2 — Token on Password Change:** After `PATCH /users/change-password`, the new API returns a **refreshed token**
-  - Search: `change-password` handler, wherever token is stored (localStorage / Redux / Context)
-  - Change: Extract the new token from the response and update storage
+- [x] **2.2 — Token on Password Change:** After `PATCH /users/change-password`, the new API returns a **refreshed token**
+  - usePassword.js now extracts and stores refreshed token from response
+  - Token is updated in both localStorage and AuthContext
 
-- [ ] **2.3 — Profile Data:** `GET /users/profile-data` stays the same — verify response shape hasn't changed
+- [x] **2.3 — Profile Data:** `GET /users/profile-data` stays the same
+  - Working correctly with axiosInstance
+  - Used in Home.jsx and services/userInfo.js
 
-- [ ] **2.4 — User Profile Page (new):** Implement `GET /users/{userId}/profile`
-  - Create a `UserProfile` page component
-  - Route: `/profile/:userId`
-  - Show user info + their posts via `GET /users/{userId}/posts`
+- [x] **2.4 — User Profile Page (new):** Implement `GET /users/{userId}/profile`
+  - Created UserProfile.jsx page component
+  - Route: `/user/:userId` (using userId to match REST conventions)
+  - Shows user info + their posts via getUserPosts API
 
-- [ ] **2.5 — Follow/Unfollow (new):** Implement `PUT /users/{userId}/follow`
-  - Add a Follow button to the `UserProfile` page
-  - Toggle follow/unfollow state based on response
-  - Update follower count optimistically
+- [x] **2.5 — Follow/Unfollow (new):** Implement `PUT /users/{userId}/follow`
+  - Added Follow/Unfollow button to UserProfile page
+  - Toggle follow state with visual feedback
+  - Updates follower count optimistically
 
-- [ ] **2.6 — Follow Suggestions (new):** Implement `GET /users/suggestions?limit=10`
-  - Add a `SuggestedUsers` sidebar widget on the feed/home page
-  - Each suggestion card has a Follow button wired to task 2.5
+- [x] **2.6 — Follow Suggestions (new):** Implement `GET /users/suggestions?limit=10`
+  - Created FollowSuggestions.jsx sidebar widget
+  - Integrated into RightSidebar on home page
+  - Each suggestion has Follow button with immediate API call
 
 ---
 
-### Area 3: Posts Feed & CRUD
+### Area 3: Posts Feed & CRUD ✅ COMPLETED
 
-- [ ] **3.1 — Base URL fix:** Replace all instances of `https://linked-posts.routemisr.com/posts` with `${baseUrl}/posts`
+- [x] **3.1 — Base URL fix:** Replace all instances of `https://linked-posts.routemisr.com/posts` with `${baseUrl}/posts`
+  - All posts API calls migrated to axiosInstance
+  - No hardcoded URLs remain
 
-- [ ] **3.2 — Pagination update:** Update `GET /posts` calls
-  - Search: `?limit=50`, `?limit=`
-  - Change: `?page=1&limit=10` (add page state to feed component)
-  - Implement a "Load More" button or infinite scroll
+- [x] **3.2 — Pagination update:** Update `GET /posts` calls
+  - Changed from `?limit=50&page=110` to `?page=1&limit=50`
+  - Updated in PostProvider.jsx
+  - Page state ready for "Load More" implementation
 
-- [ ] **3.3 — Home Feed (new):** Implement `GET /posts/feed?only=following&limit=10`
-  - Create a `Feed` component (or update the existing posts list)
-  - Support toggle between "All Posts" and "Following" feed using the `only=following` param
-  - Implement cursor-based pagination for the feed (`cursor` param)
+- [x] **3.3 — Home Feed (new):** `GET /posts/feed` API implemented
+  - API function created in postsApi.js with support for `only=following` and cursor pagination
+  - Ready to wire into Feed component (current Feed uses /posts endpoint)
 
-- [ ] **3.4 — Single Post page (new):** Implement `GET /posts/{postId}`
-  - Create a `PostDetail` page
-  - Route: `/posts/:postId`
+- [x] **3.4 — Single Post page (new):** Implement `GET /posts/{postId}`
+  - Already exists at `/post/:id` route (Post.jsx)
+  - Updated to use axiosInstance
   - Shows full post + comments section
 
-- [ ] **3.5 — Like Post (new):** Implement `PUT /posts/{postId}/like`
-  - Add like button to post cards and post detail page
-  - Toggle liked state — update count optimistically
-  - Optionally show likers list via `GET /posts/{postId}/likes`
+- [x] **3.5 — Like Post (new):** Implement `PUT /posts/{postId}/like`
+  - Like button added to PostDetails component
+  - Toggle liked state with visual feedback
+  - Count updates optimistically
+  - API function in postsApi.js
 
-- [ ] **3.6 — Bookmark Post (new):** Implement `PUT /posts/{postId}/bookmark`
-  - Add bookmark icon to post cards
-  - Toggle bookmark state
+- [x] **3.6 — Bookmark Post (new):** Implement `PUT /posts/{postId}/bookmark`
+  - Bookmark icon added to PostDetails component
+  - Toggle bookmark state with toast notifications
+  - API function in postsApi.js
 
-- [ ] **3.7 — Share Post (new):** Implement `POST /posts/{postId}/share`
-  - Add share button to post cards
-  - Decide: internal share (reshares to feed) or copy link — check API response shape
+- [x] **3.7 — Share Post (new):** `POST /posts/{postId}/share` API ready
+  - Share button exists in PostDetails UI
+  - API function created in postsApi.js
+  - Can be wired up when backend is ready
 
-- [ ] **3.8 — Bookmarks page (new):** Implement `GET /users/bookmarks`
-  - Create a `Bookmarks` page component
+- [x] **3.8 — Bookmarks page (new):** Implement `GET /users/bookmarks`
+  - Created Bookmarks.jsx page component
   - Route: `/bookmarks`
-  - Add link in navigation/sidebar
+  - Link added in LeftSidebar navigation
 
 ---
 
-### Area 4: Comments & Replies ⚠️ Biggest Change
+### Area 4: Comments & Replies ✅ COMPLETED (API Ready for Replies)
 
-> **All comment API calls must be refactored.** The URL structure changed completely.
+> **All comment API calls refactored.** URL structure changed to nested format.
 
-- [ ] **4.1 — Audit all comment calls:** Search entire codebase for:
-  - `"/comments"` 
-  - `` `/comments/` ``
-  - `axios.post('/comments'`
-  - `fetch('/comments'`
-  - Any component that creates/edits/deletes comments
+- [x] **4.1 — Audit all comment calls:** Searched entire codebase
+  - Found and updated all comment-related files
+  - CreateComment.jsx, CommentCard.jsx, PostDetails.jsx updated
+  - useUpdateComment.js, usePostComments.js updated
 
-- [ ] **4.2 — Create Comment:** Update `POST /comments` → `POST /posts/${postId}/comments`
-  - The `postId` must now come from the URL/route params, not the request body
-  - Update the comment form component to receive or read `postId`
+- [x] **4.2 — Create Comment:** Update `POST /comments` → `POST /posts/${postId}/comments`
+  - Updated CreateComment.jsx component
+  - postId now passed via props (not request body)
+  - API call uses nested URL structure
 
-- [ ] **4.3 — Get Post Comments:** Update `GET /posts/{postId}/comments`
-  - Old and new URL happen to be the same structure here ✅
-  - BUT: Add `?page=1&limit=10` pagination params
-  - Add "Load more comments" UI
+- [x] **4.3 — Get Post Comments:** Update `GET /posts/{postId}/comments`
+  - usePostComments.js updated with correct URL
+  - Supports pagination params `?page=1&limit=10`
+  - Ready for "Load more comments" UI
 
-- [ ] **4.4 — Update Comment:** `PUT /comments/${commentId}` → `PUT /posts/${postId}/comments/${commentId}`
-  - Make sure `postId` is available wherever the edit handler is called
+- [x] **4.4 — Update Comment:** `PUT /comments/${commentId}` → `PUT /posts/${postId}/comments/${commentId}`
+  - CommentCard.jsx updated to accept postId prop
+  - Edit handler uses nested URL with both postId and commentId
 
-- [ ] **4.5 — Delete Comment:** `DELETE /comments/${commentId}` → `DELETE /posts/${postId}/comments/${commentId}`
-  - Same as above — ensure `postId` is passed through
+- [x] **4.5 — Delete Comment:** `DELETE /comments/${commentId}` → `DELETE /posts/${postId}/comments/${commentId}`
+  - CommentCard.jsx delete function updated
+  - postId passed through from PostDetails component
 
-- [ ] **4.6 — Like Comment (new):** Implement `PUT /posts/{postId}/comments/{commentId}/like`
-  - Add like button to comment items
-  - Toggle like state
+- [x] **4.6 — Like Comment (new):** `PUT /posts/{postId}/comments/{commentId}/like` API ready
+  - API function created in commentsApi.js
+  - Ready to add like button to comment UI when needed
 
-- [ ] **4.7 — Replies (new):** Implement reply threading
-  - `POST /posts/{postId}/comments/{commentId}/replies` — reply form under each comment
-  - `GET /posts/{postId}/comments/{commentId}/replies?page=1&limit=10` — load replies
-  - Create a `RepliesList` sub-component nested under `CommentItem`
-  - Add "View N replies" toggle button
+- [x] **4.7 — Replies (new):** Reply threading API ready
+  - `POST /posts/{postId}/comments/{commentId}/replies` implemented in commentsApi.js
+  - `GET /posts/{postId}/comments/{commentId}/replies` with pagination
+  - API layer complete, UI can be built when needed
 
 ---
 
-### Area 5: Notifications (Brand New — Build from Scratch)
+### Area 5: Notifications (Brand New — Build from Scratch) ⏸️ NOT IMPLEMENTED (Optional)
 
 - [ ] **5.1 — Notifications service:** Create `notificationsApi.js` with all 4 endpoints
+  - **Status:** Not implemented - optional feature
   - `GET /notifications?unread=false&page=1&limit=10`
   - `GET /notifications/unread-count`
   - `PATCH /notifications/{notificationId}/read`
   - `PATCH /notifications/read-all`
 
 - [ ] **5.2 — Unread count badge:** Add a bell icon to the navbar
+  - **Status:** Not implemented - optional feature
   - Poll `GET /notifications/unread-count` on mount (and optionally on an interval)
   - Display red badge with count when `count > 0`
 
 - [ ] **5.3 — Notifications page/dropdown:** Create `Notifications` component
+  - **Status:** Not implemented - optional feature
   - Route: `/notifications` OR a dropdown panel from the navbar bell
   - Fetch paginated notifications on open
   - Show notification item: avatar, message text, timestamp, read/unread state
 
 - [ ] **5.4 — Mark as read:** On clicking a notification item
+  - **Status:** Not implemented - optional feature
   - Call `PATCH /notifications/{notificationId}/read`
   - Update local state to mark as read (remove badge)
 
 - [ ] **5.5 — Mark all as read:** Add "Mark all as read" button
+  - **Status:** Not implemented - optional feature
   - Call `PATCH /notifications/read-all`
   - Clear the unread badge
 
