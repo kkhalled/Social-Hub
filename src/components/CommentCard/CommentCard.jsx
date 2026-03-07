@@ -289,8 +289,6 @@ export default function CommentCard({
           )}
         </div>
       </div>
-        </div>
-      </div>
 
       {/* edit */}
       {isEditMode && (
