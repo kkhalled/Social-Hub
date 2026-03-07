@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
 import * as yup from 'yup';
 import { AuthContext } from '../context/AuthContext';
+import { BASE_URL } from '../config/api';
 export default function usePassword({setShowPasswordModal}) {
 
     let {token, setToken } =useContext(AuthContext);
@@ -38,7 +39,7 @@ export default function usePassword({setShowPasswordModal}) {
     try {
       // PATCH to /users/change-password
       const { data } = await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/users/change-password`,
+        `${BASE_URL}/users/change-password`,
         values,
         {
           headers: {

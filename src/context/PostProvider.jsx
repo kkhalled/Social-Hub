@@ -20,8 +20,9 @@ export function PostsProvider({ children }) {
         response = await getAllPostsApi(1, 50);
       }
 
-      if (response.message === "success") {
-        setPosts([...response.posts].reverse());
+      if (response.success === true || response.message === "success") {
+        const postsData = response.data?.posts || response.posts || [];
+        setPosts([...postsData].reverse());
       }
     } catch (error) {
       console.error(error);
@@ -31,17 +32,15 @@ export function PostsProvider({ children }) {
 
   async function deletePost(postId) {
     try {
-      const { data } = await axiosInstance.delete(
-        `/posts/${postId}`
-      );
+      const { data } = await axiosInstance.delete(`/posts/${postId}`);
 
-      if (data.message === "success") {
+      if (data.success === true || data.message === "success") {
         setPosts(prev => prev.filter(post => post._id !== postId));
-        toast.success("Post deleted successfully");
+        toast.success(data.message || "Post deleted successfully");
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete post");
+      toast.error(error.response?.data?.message || "Failed to delete post");
     }
   }
 

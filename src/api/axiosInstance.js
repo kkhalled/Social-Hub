@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { BASE_URL } from '../config/api';
 
-// Create axios instance with base URL from environment variable
+// Create axios instance with base URL
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: BASE_URL,
 });
 
 // Request interceptor to add auth token

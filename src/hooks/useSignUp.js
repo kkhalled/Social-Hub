@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
 import * as yup from 'yup';
+import { BASE_URL } from '../config/api';
 
 export default function useSignUp(){
 
@@ -57,10 +58,7 @@ export default function useSignUp(){
   async function handleSubmit(values) {
     try {
       // POST to /users/signup
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/users/signup`,
-        values
-      );
+      const { data } = await axios.post(`${BASE_URL}/users/signup`, values);
 
       if (data.success === true) {
         toast.success(data.message || "Account created successfully!");

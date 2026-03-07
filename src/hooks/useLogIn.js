@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
 import * as yup from 'yup';
 import { AuthContext } from '../context/AuthContext';
+import { BASE_URL } from '../config/api';
 
 export default function useLogIn(){
 
@@ -41,10 +42,7 @@ export default function useLogIn(){
 
   async function handleSubmit(values) {
     try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/users/signin`,
-        values
-      );
+      const { data } = await axios.post(`${BASE_URL}/users/signin`, values);
 
       if (data.success === true) {
         console.log(data);

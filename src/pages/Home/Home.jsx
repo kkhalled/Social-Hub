@@ -17,19 +17,18 @@ export default function Home() {
   const { token ,setUser } = useContext(AuthContext);
   
 
-    async function getUserInfo() {
+  async function getUserInfo() {
     try {
-      const { data } = await axiosInstance.get(
-        "/users/profile-data"
-      );
+      const { data } = await axiosInstance.get("/users/profile-data");
 
-      if (data.message === "success") {
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setUser(data.user)
-        
+      if (data.success === true || data.message === "success") {
+        const userData = data.data?.user || data.user;
+        localStorage.setItem("user", JSON.stringify(userData));
+        setUser(userData);
       }
     } catch (error) {
       console.error(error);
+      toast.error(error.response?.data?.message || "Failed to load user info");
     }
   }
 
