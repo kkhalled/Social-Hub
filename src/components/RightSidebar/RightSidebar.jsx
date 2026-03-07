@@ -115,7 +115,7 @@ export default function RightSidebar() {
                         {suggestedUsers.map((user) => (
                             <div
                                 key={user.id}
-                                className="flex items-center justify-between p-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all duration-300 group"
+                                className="flex items-center justify-between p-2 rounded-xl hover:bg-linear-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all duration-300 group"
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="relative">
@@ -165,7 +165,7 @@ export default function RightSidebar() {
                                 className="block p-3 rounded-xl border border-gray-100 hover:border-transparent hover:shadow-lg hover:shadow-gray-200/50 transition-all duration-300 group"
                             >
                                 <div className="flex gap-3">
-                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${event.color} flex flex-col items-center justify-center text-white shadow-lg`}>
+                                    <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${event.color} flex flex-col items-center justify-center text-white shadow-lg`}>
                                         <span className="text-[10px] font-bold uppercase">{event.date.split(" ")[0]}</span>
                                         <span className="text-sm font-bold -mt-0.5">{event.date.split(" ")[1]}</span>
                                     </div>
@@ -179,7 +179,7 @@ export default function RightSidebar() {
                                                 {[1, 2, 3].map((i) => (
                                                     <div
                                                         key={i}
-                                                        className="w-5 h-5 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-white"
+                                                        className="w-5 h-5 rounded-full bg-linear-to-br from-gray-200 to-gray-300 border-2 border-white"
                                                     ></div>
                                                 ))}
                                             </div>
@@ -209,7 +209,7 @@ export default function RightSidebar() {
                             <Link
                                 key={group.id}
                                 to={`/group/${group.id}`}
-                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 transition-all duration-300 group"
+                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-linear-to-r hover:from-purple-50/50 hover:to-pink-50/50 transition-all duration-300 group"
                             >
                                 <img
                                     src={group.avatar}

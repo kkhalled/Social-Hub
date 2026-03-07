@@ -78,7 +78,7 @@ export default function Profile() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <Link
           to="/"
@@ -89,7 +89,7 @@ export default function Profile() {
         </Link>
 
         <div className="bg-white rounded-3xl shadow-lg border overflow-hidden mb-6">
-          <div className="h-40 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600" />
+          <div className="h-40 bg-linear-to-r from-blue-500 via-indigo-600 to-purple-600" />
 
           <div className="px-8 pb-8 -mt-20">
             <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end mb-8">
@@ -169,7 +169,7 @@ export default function Profile() {
 
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="w-full flex items-center justify-between p-5 bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl border border-red-200"
+            className="w-full flex items-center justify-between p-5 bg-linear-to-r from-red-50 to-pink-50 rounded-2xl border border-red-200"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
@@ -255,7 +255,7 @@ export default function Profile() {
                 />{" "}
                
                 {/* Password Requirements */}{" "}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+                <div className="bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
                   {" "}
                   <p className="text-sm text-blue-900 font-bold mb-3 flex items-center gap-2">
                     {" "}
@@ -280,7 +280,7 @@ export default function Profile() {
                   {" "}
                   Cancel{" "}
                 </button>{" "}
-                <button type="submit" className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold transition active:scale-95 shadow-lg">
+                <button type="submit" className="px-6 py-3 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold transition active:scale-95 shadow-lg">
                   
                   Update Password{" "}
                 </button>

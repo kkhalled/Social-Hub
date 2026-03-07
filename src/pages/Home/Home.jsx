@@ -40,13 +40,13 @@ export default function Home() {
 
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-blue-50/30">
       <NavBar />
 
       <div className="max-w-7xl mx-auto px-4 pt-6">
         <div className="flex gap-6">
           {/* Left Sidebar */}
-          <div className="hidden lg:block flex-shrink-0">
+          <div className="hidden lg:block shrink-0">
             <LeftSidebar />
           </div>
 
@@ -59,7 +59,7 @@ export default function Home() {
           </main>
 
           {/* Right Sidebar */}
-          <div className="hidden xl:block flex-shrink-0">
+          <div className="hidden xl:block shrink-0">
             <RightSidebar />
           </div>
         </div>

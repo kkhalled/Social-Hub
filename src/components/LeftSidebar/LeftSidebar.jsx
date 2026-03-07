@@ -42,7 +42,7 @@ export default function LeftSidebar() {
         {/* User Profile Card */}
         <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden">
           {/* Cover Image */}
-          <div className="h-20 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 relative">
+          <div className="h-20 bg-linear-to-br from-blue-500 via-blue-600 to-purple-600 relative">
             <div className="absolute inset-0 opacity-30">
               <div
                 className="w-full h-full"
@@ -102,7 +102,7 @@ export default function LeftSidebar() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 group ${
                     isActive
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
+                      ? "bg-linear-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`
                 }
@@ -136,7 +136,7 @@ export default function LeftSidebar() {
               <Link
                 key={index}
                 to={`/topic/${topic.tag}`}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 group"
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 group"
               >
                 <div className="flex items-center gap-2">
                   <FontAwesomeIcon
