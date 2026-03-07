@@ -1,6 +1,6 @@
 
 import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '../api/axiosInstance';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -41,45 +41,33 @@ export default function useLogIn(){
 
   async function handleSubmit(values) {
     try {
-      const options = {
-        url: "/users/signin",
-        method: "POST",
-        data: values,
-      };
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/users/signin`,
+        values
+      );
 
-      let { data } = await axiosInstance.request(options);
-
-      if (data.message === "success") {
+      if (data.success === true) {
         console.log(data);
-        localStorage.setItem("token", data.token);
-        setToken(data.token);
         
-        // Store user data if available in the response
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-          setUser(data.user);
-        } else {
-          // If user data not in signin response, fetch it
-          try {
-            const profileResponse = await axiosInstance.get("/users/profile-data");
-            if (profileResponse.data.message === "success") {
-              localStorage.setItem("user", JSON.stringify(profileResponse.data.user));
-              setUser(profileResponse.data.user);
-            }
-          } catch (profileError) {
-            console.error("Error fetching profile:", profileError);
-          }
+        // Store token and user from response.data
+        localStorage.setItem("token", data.data.token);
+        setToken(data.data.token);
+        
+        if (data.data.user) {
+          localStorage.setItem("user", JSON.stringify(data.data.user));
+          setUser(data.data.user);
         }
         
-        toast.success("Welcome Back");
+        toast.success(data.message || "Welcome Back");
         setTimeout(() => {
           navgiate("/");
         }, 500);
       }
     } catch (error) {
-      setinvalidPassword(error.response?.data?.error || "Login failed. Please check your credentials.");
-      console.log(error);
-      toast.error(error.response?.data?.error || "Login failed. Please try again.");
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || "Login failed. Please check your credentials.";
+      setinvalidPassword(errorMsg);
+      console.error(error);
+      toast.error(errorMsg);
     }
   }
 

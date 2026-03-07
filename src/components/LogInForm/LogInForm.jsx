@@ -18,16 +18,15 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import useLogIn from "../../hooks/useLogIn";
 
-
 export default function LogInForm() {
-  const {formik , formInputs ,invalidPassword } = useLogIn();
+  const { formik, formInputs, invalidPassword } = useLogIn();
   return (
     <>
       <div className=" bg-white shadow-lg rounded-2xl min-w-6/10 m-auto px-4   py-8  text-sm ">
         <header className="text-center">
           <h1 className="text-3xl font-bold">Sign In</h1>
           <span>
-           Don't have an account ?{" "}
+            Don't have an account ?{" "}
             <Link className="text-blue-600" to={"/signup"}>
               {" "}
               Sign Up
@@ -52,10 +51,8 @@ export default function LogInForm() {
               placeholder={input.placeholder}
               formik={formik}
               invalidPassword={invalidPassword}
-              
             />
           ))}
-
 
           {/* submiting button  */}
 

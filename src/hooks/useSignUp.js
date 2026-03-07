@@ -1,6 +1,6 @@
 
 import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '../api/axiosInstance';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -57,16 +57,19 @@ export default function useSignUp(){
   async function handleSubmit(values) {
     try {
       // POST to /users/signup
-      const { data } = await axiosInstance.post("/users/signup", values);
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/users/signup`,
+        values
+      );
 
-      if (data.message === "success") {
-        toast.success("Account created successfully!");
+      if (data.success === true) {
+        toast.success(data.message || "Account created successfully!");
         setTimeout(() => {
           navgiate("/login");
         }, 2000);
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.error || "Signup failed. Please try again.";
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || "Signup failed. Please try again.";
       setExistErrorMsg(errorMsg);
       toast.error(errorMsg);
       console.error("Signup error:", error);

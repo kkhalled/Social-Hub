@@ -1,6 +1,6 @@
 
 import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '../api/axiosInstance';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -37,21 +37,29 @@ export default function usePassword({setShowPasswordModal}) {
   async function handleSubmit(values) {
     try {
       // PATCH to /users/change-password
-      const { data } = await axiosInstance.patch("/users/change-password", values);
+      const { data } = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/users/change-password`,
+        values,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       console.log(data);
       
 
-      if (data.message === "success") {
+      if (data.success === true) {
         // Update token if new one is returned (new API returns refreshed token)
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-          setToken(data.token);
+        if (data.data?.token) {
+          localStorage.setItem("token", data.data.token);
+          setToken(data.data.token);
         }
-        toast.success("Password changed successfully!");
+        toast.success(data.message || "Password changed successfully!");
         setShowPasswordModal(false)
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.error || "Failed to change password. Please try again.";
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || "Failed to change password. Please try again.";
       console.error("Password change error:", error);
       toast.error(errorMsg);
     }
