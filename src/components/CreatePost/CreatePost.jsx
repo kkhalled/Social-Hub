@@ -56,20 +56,17 @@ export default function CreatePost({ userName, userPhoto }) {
       if (values.image) {
         formData.append("image", values.image);
       }
-      const options = {
-        url: "/posts",
-        method: "POST",
-        data: formData,
-      };
-      const response = await axiosInstance(options);
+      
+      const response = await axiosInstance.post("/posts", formData);
       console.log("Post created successfully:", response.data);
-      if (response.data.message === "success") {
+      
+      if (response.data.success === true || response.data.message === "success") {
         formik.resetForm();
         getAllPosts();
         setImagePreview(null);
       }
     } catch (error) {
-      console.log("Error creating post:", error);
+      console.error("Error creating post:", error);
     }
   }
 
