@@ -27,23 +27,22 @@ export default function CreateComment({ postId, setCommentsUpdated, onCommentCre
 
     async function handleSubmit(values) {
         try {
-            const options = {
-                url: `/posts/${postId}/comments`,
-                method: "POST",
-                data: { 
-                    content: values.content
-                },
-            };
-            const {data} = await axiosInstance(options);
+            const {data} = await axiosInstance.post(`/posts/${postId}/comments`, { 
+                content: values.content
+            });
             console.log("Comment created successfully:", data);
-            if (data.message === "success") {
-                setCommentsUpdated(data.comments);
-                toast.success("Comment added successfully");
+            
+            if (data.success === true || data.message === "success") {
+                // Handle different response structures
+                const newComment = data.data?.comment || data.comment;
+                const allComments = data.data?.comments || data.comments;
+                
+                if (allComments) {
+                    setCommentsUpdated(allComments);
+                }
+                
+                toast.success(data.message || "Comment added successfully");
                 formik.resetForm();
-                const newComment = data.comment;
-
-
-                 
 
                 // Update feed if PostsContext is available
                 if (updatePostComments && newComment) {
@@ -51,14 +50,13 @@ export default function CreateComment({ postId, setCommentsUpdated, onCommentCre
                 }
                 
                 // Call callback for Post page update
-                if (onCommentCreated) {
-                    // Pass the new comment data to update UI immediately
+                if (onCommentCreated && newComment) {
                     onCommentCreated(newComment);
                 }
             }
         } catch (error) {
-            console.log("Error creating comment:", error);
-            toast.error("Failed to add comment");
+            console.error("Error creating comment:", error);
+            toast.error(error.response?.data?.message || "Failed to add comment");
         }
     }
 

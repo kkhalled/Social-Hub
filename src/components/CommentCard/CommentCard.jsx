@@ -43,18 +43,16 @@ export default function CommentCard({
 
   async function handleSubmit(values) {
     try {
-      const options = {
-        url: `/posts/${postId}/comments/${commentId}`,
-        method: "PUT",
-        data: {
-          content: values.content,
-        },
-      };
-      const { data } = await axiosInstance(options);
+      const { data } = await axiosInstance.put(
+        `/posts/${postId}/comments/${commentId}`,
+        { content: values.content }
+      );
       console.log("Comment updated successfully:", data);
-      if (data.message === "success") {
-        setUpdatedContent(data.comment.content);
-        toast.success("Comment updated successfully");
+      
+      if (data.success === true || data.message === "success") {
+        const updatedComment = data.data?.comment || data.comment;
+        setUpdatedContent(updatedComment?.content || values.content);
+        toast.success(data.message || "Comment updated successfully");
 
         if (onUpdate) {
           onUpdate(values.content);
@@ -62,8 +60,8 @@ export default function CommentCard({
         setIsEditMode(false);
       }
     } catch (error) {
-      console.log("Error updating comment:", error);
-      toast.error("Failed to update comment");
+      console.error("Error updating comment:", error);
+      toast.error(error.response?.data?.message || "Failed to update comment");
     }
   }
 
@@ -87,16 +85,16 @@ export default function CommentCard({
         `/posts/${postId}/comments/${commentId}`
       );
 
-      if (data.message === "success") {
-        toast.success("Comment deleted");
+      if (data.success === true || data.message === "success") {
+        toast.success(data.message || "Comment deleted");
 
         setCommentsUpdated(prev =>
           prev.filter(comment => comment._id !== commentId)
         );
       }
     } catch (error) {
-      console.log("failed delete comment", error);
-      toast.error("failed delete comment");
+      console.error("Failed to delete comment:", error);
+      toast.error(error.response?.data?.message || "Failed to delete comment");
     }
   }
 
@@ -104,13 +102,14 @@ export default function CommentCard({
   const handleLike = async () => {
     try {
       const response = await toggleLikeComment(postId, commentId);
-      if (response.message === "success") {
+      if (response.success === true || response.message === "success") {
         setIsLiked(!isLiked);
         setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+        toast.success(isLiked ? "Like removed" : "Comment liked");
       }
     } catch (error) {
       console.error("Error toggling like:", error);
-      toast.error("Failed to like comment");
+      toast.error(error.response?.data?.message || "Failed to like comment");
     }
   };
 
@@ -121,8 +120,8 @@ export default function CommentCard({
 
     try {
       const response = await createReply(postId, commentId, replyContent);
-      if (response.message === "success") {
-        toast.success("Reply added");
+      if (response.success === true || response.message === "success") {
+        toast.success(response.message || "Reply added");
         setReplyContent("");
         setShowReplyForm(false);
         // Refresh replies
@@ -131,7 +130,7 @@ export default function CommentCard({
       }
     } catch (error) {
       console.error("Error adding reply:", error);
-      toast.error("Failed to add reply");
+      toast.error(error.response?.data?.message || "Failed to add reply");
     }
   };
 
@@ -139,12 +138,14 @@ export default function CommentCard({
   const loadReplies = async () => {
     try {
       const response = await getCommentReplies(postId, commentId);
-      if (response.replies) {
-        setReplies(response.replies);
+      if (response.success === true || response.message === "success") {
+        const repliesData = response.data?.replies || response.replies || [];
+        setReplies(repliesData);
         setShowReplies(true);
       }
     } catch (error) {
       console.error("Error loading replies:", error);
+      toast.error(error.response?.data?.message || "Failed to load replies");
     }
   };
 

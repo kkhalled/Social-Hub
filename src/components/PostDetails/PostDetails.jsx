@@ -56,13 +56,14 @@ export default function PostDetails({
   const handleLike = async () => {
     try {
       const response = await toggleLikePost(id);
-      if (response.message === "success") {
+      if (response.success === true || response.message === "success") {
         setIsLiked(!isLiked);
         setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+        toast.success(isLiked ? "Like removed" : "Post liked");
       }
     } catch (error) {
       console.error("Error toggling like:", error);
-      toast.error("Failed to like post");
+      toast.error(error.response?.data?.message || "Failed to like post");
     }
   };
 
@@ -70,13 +71,13 @@ export default function PostDetails({
   const handleBookmark = async () => {
     try {
       const response = await toggleBookmarkPost(id);
-      if (response.message === "success") {
+      if (response.success === true || response.message === "success") {
         setIsBookmarked(!isBookmarked);
         toast.success(isBookmarked ? "Bookmark removed" : "Post bookmarked");
       }
     } catch (error) {
       console.error("Error toggling bookmark:", error);
-      toast.error("Failed to bookmark post");
+      toast.error(error.response?.data?.message || "Failed to bookmark post");
     }
   };
 
@@ -84,8 +85,8 @@ export default function PostDetails({
   const handleShare = async () => {
     try {
       const response = await sharePost(id);
-      if (response.message === "success") {
-        toast.success("Post shared successfully!");
+      if (response.success === true || response.message === "success") {
+        toast.success(response.message || "Post shared successfully!");
         // Copy link to clipboard
         const postUrl = `${window.location.origin}/post/${id}`;
         navigator.clipboard.writeText(postUrl);
@@ -93,7 +94,7 @@ export default function PostDetails({
       }
     } catch (error) {
       console.error("Error sharing post:", error);
-      toast.error("Failed to share post");
+      toast.error(error.response?.data?.message || "Failed to share post");
     }
   };
 
@@ -246,9 +247,7 @@ export default function PostDetails({
               className="text-lg group-hover:scale-125 group-hover:text-green-600 transition-all duration-300 relative z-10"
             />
             <span className="group-hover:text-green-600 relative z-10">
-              Comm
-            onClick={handleShare}
-            ent
+              Comment
             </span>
           </button>
 
@@ -265,7 +264,9 @@ export default function PostDetails({
             </span>
           </button>
 
-          <button className="relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-purple-50 hover:to-transparent transition-all duration-300 group overflow-hidden">
+          <button 
+            onClick={handleShare}
+            className="relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-purple-50 hover:to-transparent transition-all duration-300 group overflow-hidden">
             <div className="absolute inset-0 bg-linear-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             <FontAwesomeIcon
               icon={faShareFromSquare}
