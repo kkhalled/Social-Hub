@@ -52,11 +52,13 @@ export default function usePassword({setShowPasswordModal}) {
           localStorage.setItem("token", data.token);
           setToken(data.token);
         }
-        toast.success("Password Changed");
+        toast.success("Password changed successfully!");
         setShowPasswordModal(false)
       }
     } catch (error) {
-      console.log(error.response);
+      const errorMsg = error.response?.data?.error || "Failed to change password. Please try again.";
+      console.error("Password change error:", error);
+      toast.error(errorMsg);
     }
   }
 

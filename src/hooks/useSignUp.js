@@ -2,7 +2,7 @@
 import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
 import axiosInstance from '../api/axiosInstance';
 import { useFormik } from 'formik';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
 import * as yup from 'yup';
@@ -65,15 +65,16 @@ export default function useSignUp(){
       let { data } = await axiosInstance.request(options);
 
       if (data.message === "success") {
-        
-        toast.success("acccount is created");
+        toast.success("Account created successfully!");
         setTimeout(() => {
           navgiate("/login");
         }, 2000);
       }
     } catch (error) {
-      setExistErrorMsg(error.response.data.error);
-      console.log(error.response);
+      const errorMsg = error.response?.data?.error || "Signup failed. Please try again.";
+      setExistErrorMsg(errorMsg);
+      toast.error(errorMsg);
+      console.error("Signup error:", error);
     }
   }
 
@@ -91,6 +92,13 @@ export default function useSignUp(){
 
     onSubmit: handleSubmit,
   });
+
+  // Clear server error when user starts typing
+  React.useEffect(() => {
+    if (formik.values.email && existErrorMsg) {
+      setExistErrorMsg(null);
+    }
+  }, [formik.values.email]);
   // console.log(formik);
 
   //  label , icon , palceholder ,name -value - id

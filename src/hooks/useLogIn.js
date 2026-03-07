@@ -2,7 +2,7 @@
 import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
 import axiosInstance from '../api/axiosInstance';
 import { useFormik } from 'formik';
-import { useContext, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
 import * as yup from 'yup';
@@ -96,6 +96,13 @@ export default function useLogIn(){
 
     onSubmit: handleSubmit,
   });
+
+  // Clear server error when user starts typing
+  React.useEffect(() => {
+    if ((formik.values.email || formik.values.password) && invalidPassword) {
+      setinvalidPassword(null);
+    }
+  }, [formik.values.email, formik.values.password]);
   // console.log(formik);
 
   //  label , icon , palceholder ,name -value - id
