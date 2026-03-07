@@ -39,6 +39,9 @@ export default function PostDetails({
   onCommentCreated,
   userPhoto,
   userName,
+  likes = [],
+  isLiked: initialIsLiked = false,
+  isBookmarked: initialIsBookmarked = false,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -46,11 +49,19 @@ export default function PostDetails({
   const [commentsUpdated, setCommentsUpdated] = useState(comments);
   const postsContext = useContext(PostsContext);
   const deletePost = postsContext?.deletePost;
+  const { user } = useContext(AuthContext);
   
-  // Like and bookmark state
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  // Like and bookmark state - initialize from props
+  const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [likesCount, setLikesCount] = useState(likes?.length || 0);
+  const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
+
+  // Update state when props change (after refresh)
+  useEffect(() => {
+    setIsLiked(initialIsLiked);
+    setLikesCount(likes?.length || 0);
+    setIsBookmarked(initialIsBookmarked);
+  }, [initialIsLiked, likes, initialIsBookmarked]);
 
   // Handle like toggle
   const handleLike = async () => {

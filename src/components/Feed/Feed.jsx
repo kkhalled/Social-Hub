@@ -9,7 +9,7 @@ import { AuthContext } from "../../context/AuthContext";
 export default function Feed() {
 
   const { posts, feedType, setFeedType } = useContext(PostsContext);
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
 
   // const [  ] = useState(false);
   function handleCommentCreated(newComment) {
@@ -84,6 +84,9 @@ export default function Feed() {
                   commentsLimit={4}
                   id={post._id}
                   userId={post.user._id || post.user.id}
+                  likes={post.likes || []}
+                  isLiked={post.likes?.some(like => like._id === user?._id || like === user?._id) || false}
+                  isBookmarked={post.isBookmarked || false}
                 />
               );
             })}
