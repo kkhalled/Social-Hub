@@ -5,7 +5,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { PostsContext } from "../../context/PostProvider";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { toast } from "react-toastify";
 
 import defaultAvatar from "../../assets/user.png";
@@ -28,15 +28,13 @@ export default function CreateComment({ postId, setCommentsUpdated, onCommentCre
     async function handleSubmit(values) {
         try {
             const options = {
-                url: `https://linked-posts.routemisr.com/comments`,
+                url: `/posts/${postId}/comments`,
                 method: "POST",
-                headers: { token },
                 data: { 
-                    content: values.content,
-                    post: postId
+                    content: values.content
                 },
             };
-            const {data} = await axios(options);
+            const {data} = await axiosInstance(options);
             console.log("Comment created successfully:", data);
             if (data.message === "success") {
                 setCommentsUpdated(data.comments);

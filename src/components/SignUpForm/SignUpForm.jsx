@@ -17,7 +17,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useFormik } from "formik";
 import { toast, ToastContainer } from "react-toastify";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import useSignUp from "../../hooks/useSignUp";
 
 export default function SignUpForm() {

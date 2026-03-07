@@ -8,7 +8,7 @@ import {
 import { AuthContext } from "./../../context/AuthContext";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { PostsContext } from "../../context/PostProvider";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
@@ -48,12 +48,11 @@ export default function EditPost({ post, userPhoto, userName }) {
         formData.append("image", values.image);
       }
       const options = {
-        url: `https://linked-posts.routemisr.com/posts/${post._id || post.id}`,
+        url: `/posts/${post._id || post.id}`,
         method: "PUT",
-        headers: { token },
         data: formData,
       };
-      const response = await axios(options);
+      const response = await axiosInstance(options);
       console.log("Post updated successfully:", response.data);
       if (response.data.message === "success") {
         toast.success("Post updated successfully");

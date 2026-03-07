@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 
@@ -14,6 +14,7 @@ export default function CommentCard({
   content,
   date,
   commentId,
+  postId,
   onUpdate,
   setCommentsUpdated,
   comments,
@@ -33,14 +34,13 @@ export default function CommentCard({
   async function handleSubmit(values) {
     try {
       const options = {
-        url: `https://linked-posts.routemisr.com/comments/${commentId}`,
+        url: `/posts/${postId}/comments/${commentId}`,
         method: "PUT",
-        headers: { token },
         data: {
           content: values.content,
         },
       };
-      const { data } = await axios(options);
+      const { data } = await axiosInstance(options);
       console.log("Comment updated successfully:", data);
       if (data.message === "success") {
         setUpdatedContent(data.comment.content);
@@ -73,9 +73,8 @@ export default function CommentCard({
   // delete
 async function deleteComment() {
   try {
-    const { data } = await axios.delete(
-      `https://linked-posts.routemisr.com/comments/${commentId}`,
-      { headers: { token } }
+    const { data } = await axiosInstance.delete(
+      `/posts/${postId}/comments/${commentId}`
     );
 
     if (data.message === "success") {

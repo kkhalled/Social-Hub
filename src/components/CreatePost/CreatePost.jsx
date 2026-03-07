@@ -11,7 +11,7 @@ import defaultAvatar from "../../assets/user.png";
 import { AuthContext } from "./../../context/AuthContext";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 
 // import { usePosts } from "../../hooks/usePosts";
 
@@ -57,12 +57,11 @@ export default function CreatePost({ userName, userPhoto }) {
         formData.append("image", values.image);
       }
       const options = {
-        url: "https://linked-posts.routemisr.com/posts",
+        url: "/posts",
         method: "POST",
-        headers: { token },
         data: formData,
       };
-      const response = await axios(options);
+      const response = await axiosInstance(options);
       console.log("Post created successfully:", response.data);
       if (response.data.message === "success") {
         formik.resetForm();

@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import { toast } from "react-toastify";
 
 export function useDelete() {
@@ -9,11 +9,10 @@ export function useDelete() {
   async function deletePost(id) {
     try {
       const options = {
-        url: `https://linked-posts.routemisr.com/posts/${id}`,
+        url: `/posts/${id}`,
         method: "DELETE",
-        headers: { token },
       };
-        const { data } = await axios.request(options);
+        const { data } = await axiosInstance.request(options);
         console.log(data);
         if (data.message === "success") {
           console.log("Post deleted successfully");

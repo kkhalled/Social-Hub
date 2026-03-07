@@ -15,10 +15,14 @@ import {
 } from "@fortawesome/free-regular-svg-icons";
 import CommentCard from "../CommentCard/CommentCard";
 import CreateComment from "../comments/CreateComment";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { AuthContext } from "./../../context/AuthContext";
 import { Link, useNavigate } from "react-router";
 import { PostsContext } from "../../context/PostProvider";
+import { toggleLikePost, toggleBookmarkPost } from "../../api/postsApi";
+import { toast } from "react-toastify";
+import { faBookmark as faBookmarkSolid } from "@fortawesome/free-solid-svg-icons";
+import { faBookmark } from "@fortawesome/free-regular-svg-icons";
 
 
 
@@ -40,9 +44,41 @@ export default function PostDetails({
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const [commentsUpdated, setCommentsUpdated] = useState(comments);
-    const postsContext = useContext(PostsContext);
+  const postsContext = useContext(PostsContext);
   const deletePost = postsContext?.deletePost;
-  // const [ updateComments , setUpdate ] = useState(false);
+  
+  // Like and bookmark state
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  // Handle like toggle
+  const handleLike = async () => {
+    try {
+      const response = await toggleLikePost(id);
+      if (response.message === "success") {
+        setIsLiked(!isLiked);
+        setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      toast.error("Failed to like post");
+    }
+  };
+
+  // Handle bookmark toggle
+  const handleBookmark = async () => {
+    try {
+      const response = await toggleBookmarkPost(id);
+      if (response.message === "success") {
+        setIsBookmarked(!isBookmarked);
+        toast.success(isBookmarked ? "Bookmark removed" : "Post bookmarked");
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      toast.error("Failed to bookmark post");
+    }
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -162,7 +198,7 @@ export default function PostDetails({
             </span>
           </div>
           <button className="text-sm text-gray-700 hover:text-gray-900 hover:underline font-semibold transition-colors">
-            100
+            {likesCount || 0}
           </button>
         </div>
         <button className="text-sm text-gray-600 hover:text-gray-900 hover:underline font-semibold transition-colors">
@@ -172,15 +208,17 @@ export default function PostDetails({
 
       {/* Action bar with modern linear hover */}
       <div className="border-t border-gray-100">
-        <div className="grid grid-cols-3 text-gray-600 text-[15px] font-semibold">
-          <button className="relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-blue-50 hover:to-transparent transition-all duration-300 group overflow-hidden">
+        <div className="grid grid-cols-4 text-gray-600 text-[15px] font-semibold">
+          <button 
+            onClick={handleLike}
+            className={`relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-blue-50 hover:to-transparent transition-all duration-300 group overflow-hidden ${isLiked ? 'text-blue-600' : ''}`}>
             <div className="absolute inset-0 bg-linear-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             <FontAwesomeIcon
-              icon={likebtn}
+              icon={isLiked ? faThumbsUp : likebtn}
               className="text-lg group-hover:scale-125 group-hover:text-blue-600 transition-all duration-300 relative z-10"
             />
             <span className="group-hover:text-blue-600 relative z-10">
-              Like
+              {isLiked ? 'Liked' : 'Like'}
             </span>
           </button>
 
@@ -192,6 +230,19 @@ export default function PostDetails({
             />
             <span className="group-hover:text-green-600 relative z-10">
               Comment
+            </span>
+          </button>
+
+          <button 
+            onClick={handleBookmark}
+            className={`relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-yellow-50 hover:to-transparent transition-all duration-300 group border-r border-gray-100 overflow-hidden ${isBookmarked ? 'text-yellow-600' : ''}`}>
+            <div className="absolute inset-0 bg-linear-to-r from-yellow-500/0 via-yellow-500/5 to-yellow-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+            <FontAwesomeIcon
+              icon={isBookmarked ? faBookmarkSolid : faBookmark}
+              className="text-lg group-hover:scale-125 group-hover:text-yellow-600 transition-all duration-300 relative z-10"
+            />
+            <span className="group-hover:text-yellow-600 relative z-10">
+              {isBookmarked ? 'Saved' : 'Save'}
             </span>
           </button>
 
@@ -219,6 +270,7 @@ export default function PostDetails({
                 commentCreatorImg={comment.commentCreator.photo}
                 content={comment.content}
                 commentId={comment._id}
+                postId={id}
                 date={comment.createdAt}
                 setCommentsUpdated={setCommentsUpdated}
               />

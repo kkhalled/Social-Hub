@@ -9,7 +9,7 @@ import { useDelete } from "../../hooks/useDelete";
 
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { toast } from "react-toastify";
 import { PostsProvider } from "../../context/PostProvider";
 
@@ -19,9 +19,8 @@ export default function Home() {
 
     async function getUserInfo() {
     try {
-      const { data } = await axios.get(
-        "https://linked-posts.routemisr.com/users/profile-data",
-        { headers: { token } },
+      const { data } = await axiosInstance.get(
+        "/users/profile-data"
       );
 
       if (data.message === "success") {

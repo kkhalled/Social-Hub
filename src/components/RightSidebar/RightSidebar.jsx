@@ -11,6 +11,7 @@ import {
     faCrown,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router";
+import FollowSuggestions from "../FollowSuggestions/FollowSuggestions";
 
 export default function RightSidebar() {
     const suggestedUsers = [
@@ -95,9 +96,10 @@ export default function RightSidebar() {
     return (
         <aside className="w-64 h-[calc(100vh-80px)] sticky top-20 overflow-y-auto scrollbar-hide">
             <div className="space-y-4 pl-4">
+                {/* Follow Suggestions - Dynamic */}
+                <FollowSuggestions />
 
-
-                {/* Suggested Users */}
+                {/* Suggested Users - Keep for fallback/additional suggestions */}
                 <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-4">
                     <div className="flex items-center justify-between mb-4 px-2">
                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">

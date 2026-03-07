@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import  * as Yup  from 'yup';
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import { toast } from "react-toastify";
 import { useFormik } from "formik";
 
@@ -20,15 +20,14 @@ export function useUpdateComment(commentId, updatedContent) {
     async function handleSubmit(values) {
         try {
             const options = {
-                url: `https://linked-posts.routemisr.com/comments/${commentId}`,
+                url: `/comments/${commentId}`,
                 method: "POST",
-                headers: { token },
                 data: { 
                     content: values.content,
                     post: postId
                 },
             };
-            const {data} = await axios(options);
+            const {data} = await axiosInstance(options);
             console.log("Comment created successfully:", data);
             if (data.message === "success") {
                 setCommentsUpdated(data.comments);

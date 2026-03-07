@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { useParams, useNavigate, useLocation } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -34,12 +34,11 @@ export default function Post() {
   async function getSinglePost() {
     try {
       const options = {
-        url: `https://linked-posts.routemisr.com/posts/${id}`,
+        url: `/posts/${id}`,
         method: "GET",
-        headers: { token },
       };
 
-      const { data } = await axios.request(options);
+      const { data } = await axiosInstance.request(options);
       console.log(data);
       if (data.message === "success") {
         setPost(data.post);

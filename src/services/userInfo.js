@@ -1,8 +1,9 @@
- async function getUserInfo() {
+import axiosInstance from "../api/axiosInstance";
+
+async function getUserInfo() {
     try {
-      const { data } = await axios.get(
-        "https://linked-posts.routemisr.com/users/profile-data",
-        { headers: { token } },
+      const { data } = await axiosInstance.get(
+        "/users/profile-data"
       );
 
       if (data.message === "success") {

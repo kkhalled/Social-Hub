@@ -1,6 +1,6 @@
 
 import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 import { useFormik } from 'formik';
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -9,7 +9,7 @@ import * as yup from 'yup';
 import { AuthContext } from '../context/AuthContext';
 export default function usePassword({setShowPasswordModal}) {
 
-    let {token } =useContext(AuthContext);
+    let {token, setToken } =useContext(AuthContext);
   
   const passwordRegex =
     /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-]).{8,}$/;
@@ -37,17 +37,21 @@ export default function usePassword({setShowPasswordModal}) {
   async function handleSubmit(values) {
     try {
       const options = {
-        url: "https://linked-posts.routemisr.com/users/change-password",
+        url: "/users/change-password",
         method: "PATCH",
         data: values,
-        headers:{token}
       };
 
-      let { data } = await axios.request(options);
+      let { data } = await axiosInstance.request(options);
       console.log(data);
       
 
       if (data.message === "success") {
+        // Update token if new one is returned (new API returns refreshed token)
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+          setToken(data.token);
+        }
         toast.success("Password Changed");
         setShowPasswordModal(false)
       }

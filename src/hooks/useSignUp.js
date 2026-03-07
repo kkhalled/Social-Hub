@@ -1,6 +1,6 @@
 
 import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 import { useFormik } from 'formik';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -57,12 +57,12 @@ export default function useSignUp(){
   async function handleSubmit(values) {
     try {
       const options = {
-        url: "https://linked-posts.routemisr.com/users/signup",
+        url: "/users/signup",
         method: "POST",
         data: values,
       };
 
-      let { data } = await axios.request(options);
+      let { data } = await axiosInstance.request(options);
 
       if (data.message === "success") {
         

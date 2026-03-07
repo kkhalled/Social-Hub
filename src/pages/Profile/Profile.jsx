@@ -11,7 +11,7 @@ import {
   faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { AuthContext } from "../../context/AuthContext";
 import defaultAvatar from "../../assets/user.png";
 import usePassword from "../../hooks/usePassword";
@@ -49,14 +49,9 @@ export default function Profile() {
     formData.append("photo", file);
 
     try {
-      const { data } = await axios.put(
-        "https://linked-posts.routemisr.com/users/upload-photo",
-        formData,
-        {
-          headers: {
-            token, // ⚠️ بس التوكن — متحطش Content-Type
-          },
-        },
+      const { data } = await axiosInstance.put(
+        "/users/upload-photo",
+        formData
       );
       console.log(data);
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import { AuthContext } from "./AuthContext";
 import { toast } from "react-toastify";
 
@@ -11,9 +11,8 @@ export function PostsProvider({ children }) {
 
   async function getAllPosts() {
     try {
-      const { data } = await axios.get(
-        "https://linked-posts.routemisr.com/posts?limit=50&page=108",
-        { headers: { token } }
+      const { data } = await axiosInstance.get(
+        "/posts?page=1&limit=50"
       );
 
       if (data.message === "success") {
@@ -26,9 +25,8 @@ export function PostsProvider({ children }) {
 
   async function deletePost(postId) {
     try {
-      const { data } = await axios.delete(
-        `https://linked-posts.routemisr.com/posts/${postId}`,
-        { headers: { token } }
+      const { data } = await axiosInstance.delete(
+        `/posts/${postId}`
       );
 
       if (data.message === "success") {

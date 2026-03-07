@@ -6,6 +6,8 @@ import SignUp from "./pages/SignUp/SignUp";
 import Post from "./pages/Post/Post";
 import NotFound from "./pages/NotFound/NotFound";
 import Profile from "./pages/Profile/Profile";
+import Bookmarks from "./pages/Bookmarks/Bookmarks";
+import UserProfile from "./pages/UserProfile/UserProfile";
 import AuthProvider from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import AuthRoute from "./components/AuthRoute/AuthRoute";
@@ -45,6 +47,22 @@ function App() {
       element: (
         <ProtectedRoute>
           <Profile />
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/user/:userId",
+      element: (
+        <ProtectedRoute>
+          <UserProfile />
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/bookmarks",
+      element: (
+        <ProtectedRoute>
+          <Bookmarks />
         </ProtectedRoute>
       )
     },

@@ -24,7 +24,7 @@ export default function LeftSidebar() {
     { icon: faHouse, label: "Home", path: "/" },
     { icon: faCompass, label: "Explore", path: "/explore" },
     { icon: faUsers, label: "Communities", path: "/communities" },
-    { icon: faBookmark, label: "Saved Posts", path: "/saved" },
+    { icon: faBookmark, label: "Saved Posts", path: "/bookmarks" },
     { icon: faCalendarDays, label: "Events", path: "/events" },
     { icon: faNewspaper, label: "News Feed", path: "/news" },
   ];

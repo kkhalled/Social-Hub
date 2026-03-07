@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 
@@ -8,11 +8,10 @@ export  function usePostComments() {
   async function getPost(postId) {
     try {
       const options = {
-        url: `https://linked-posts.routemisr.com/${postId}/comments`,
+        url: `/posts/${postId}/comments`,
         method: "GET",
-        headers: { token },
       };
-      const { data } = await axios.request(options);
+      const { data } = await axiosInstance.request(options);
       if (data.message === "success") {
         console.log("hook data",data);
       }
