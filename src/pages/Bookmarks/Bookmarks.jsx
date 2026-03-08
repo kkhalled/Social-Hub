@@ -1,11 +1,11 @@
-import React, { useContext, useEffect, useState } from "react";
+  import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookmark, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import NavBar from "../../components/NavBar/NavBar";
-import PostDetails from "../../components/PostDetails/PostDetails";
+import PostDetails from "../../components/posts/PostDetails";
 import { getUserBookmarks } from "../../api/usersApi";
-import PostSkeleton from "../../components/PostSkeleton/PostSkeleton";
+import PostSkeleton from "../../components/posts/PostSkeleton";
 import { AuthContext } from "../../context/AuthContext";
 
 export default function Bookmarks() {

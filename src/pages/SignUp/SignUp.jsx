@@ -1,7 +1,7 @@
 import React from "react";
 
-import SignUpForm from "../../components/SignUpForm/SignUpForm";
-import SignHero from "../../components/SignHero/SignHero";
+import SignUpForm from "../../components/Auth/SignUpForm/SignUpForm";
+import SignHero from "../../components/Auth/SignHero/SignHero";
 
 export default function SignUp() {
   return (

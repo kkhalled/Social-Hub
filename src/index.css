@@ -41,3 +41,6 @@ body {
     transform: translateX(100%);
   }
 }
+button:hover{
+  cursor: pointer;
+}

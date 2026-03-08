@@ -8,7 +8,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router";
-import hero from "../../assets/hero.jpg"
+import hero from "../../../assets/hero.jpg"
 export default function SignHero({title,titleMin,text}) {
   const cards = [
     {

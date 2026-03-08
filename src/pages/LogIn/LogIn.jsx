@@ -1,6 +1,6 @@
 import React from 'react'
-import SignHero from '../../components/SignHero/SignHero'
-import LogInForm from '../../components/LogInForm/LogInForm'
+import SignHero from '../../components/Auth/SignHero/SignHero'
+import LogInForm from '../../components/Auth/LogInForm/LogInForm'
 
 export default function LogIn() {
   return (
