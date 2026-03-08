@@ -22,6 +22,12 @@ export default function useSignUp(){
       .min(3, "name must be at least 3 characters ")
       .max(20),
 
+    username: yup
+      .string()
+      .required("username is required")
+      .min(3, "username must be at least 3 characters")
+      .max(30, "username must be at most 30 characters"),
+
     email: yup
       .string()
       .email(" email is invalid ")
@@ -77,6 +83,7 @@ export default function useSignUp(){
   const formik = useFormik({
     initialValues: {
       name: "",
+      username: "",
       email: "",
       password: "",
       rePassword: "",
@@ -105,6 +112,13 @@ export default function useSignUp(){
       type: "text",
       icon: faUser,
       placeholder: "Enter Your Full Name",
+    },
+    {
+      label: "Username",
+      id: "username",
+      type: "text",
+      icon: faUser,
+      placeholder: "Choose a username",
     },
     {
       label: "Email Address",
