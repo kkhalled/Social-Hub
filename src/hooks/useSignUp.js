@@ -62,20 +62,32 @@ export default function useSignUp(){
   });
 
   async function handleSubmit(values) {
+    setExistErrorMsg(null);
     try {
       // POST to /users/signup
       const { data } = await axios.post(`${BASE_URL}/users/signup`, values);
 
-      if (data.success === true) {
+      if (data.success === true || data.message === "success") {
         toast.success(data.message || "Account created successfully!");
+        formik.resetForm();
         setTimeout(() => {
           navgiate("/login");
         }, 2000);
       }
     } catch (error) {
       const errorMsg = error.response?.data?.message || error.response?.data?.error || "Signup failed. Please try again.";
-      setExistErrorMsg(errorMsg);
-      toast.error(errorMsg);
+      
+      // Check if it's a username exists error
+      if (errorMsg.toLowerCase().includes("username") && errorMsg.toLowerCase().includes("exist")) {
+        setExistErrorMsg(errorMsg);
+        toast.error(errorMsg);
+      } else if (errorMsg.toLowerCase().includes("email") && errorMsg.toLowerCase().includes("exist")) {
+        setExistErrorMsg(errorMsg);
+        toast.error(errorMsg);
+      } else {
+        setExistErrorMsg(errorMsg);
+        toast.error(errorMsg);
+      }
       console.error("Signup error:", error);
     }
   }
@@ -96,12 +108,12 @@ export default function useSignUp(){
     onSubmit: handleSubmit,
   });
 
-  // Clear server error when user starts typing
+  // Clear server error when user starts typing in relevant fields
   React.useEffect(() => {
-    if (formik.values.email && existErrorMsg) {
+    if ((formik.values.email || formik.values.username) && existErrorMsg) {
       setExistErrorMsg(null);
     }
-  }, [formik.values.email]);
+  }, [formik.values.email, formik.values.username]);
   // console.log(formik);
 
   //  label , icon , palceholder ,name -value - id
