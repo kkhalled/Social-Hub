@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserPlus, faCheck } from "@fortawesome/free-solid-svg-icons";
+import { faUserPlus, faUserGroup, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { getFollowSuggestions, toggleFollowUser } from "../../api/usersApi";
 import defaultAvatar from "../../assets/user.png";
 import { toast } from "react-toastify";
@@ -10,6 +10,7 @@ export default function FollowSuggestions() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followingState, setFollowingState] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadSuggestions();
@@ -19,8 +20,8 @@ export default function FollowSuggestions() {
     try {
       setLoading(true);
       const response = await getFollowSuggestions(10);
-      if (response.message === "success") {
-        setSuggestions(response.users || []);
+      if (response.message === "success" || response.success === true) {
+        setSuggestions(response.data?.suggestions || response.users || []);
       }
     } catch (error) {
       console.error("Error loading suggestions:", error);
@@ -31,99 +32,132 @@ export default function FollowSuggestions() {
 
   async function handleFollow(userId) {
     try {
-      setFollowingState(prev => ({ ...prev, [userId]: true }));
+      setFollowingState((prev) => ({ ...prev, [userId]: true }));
       const response = await toggleFollowUser(userId);
       if (response.message === "success") {
-        toast.success("Followed");
-        // Remove from suggestions after following
-        setSuggestions(prev => prev.filter(user => user._id !== userId));
+        toast.success("Followed!");
+        setSuggestions((prev) => prev.filter((user) => user._id !== userId));
       }
     } catch (error) {
       console.error("Error following user:", error);
       toast.error("Failed to follow");
-      setFollowingState(prev => ({ ...prev, [userId]: false }));
+      setFollowingState((prev) => ({ ...prev, [userId]: false }));
     }
   }
 
+  const filtered = searchQuery
+    ? suggestions.filter(
+        (u) =>
+          u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.username?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : suggestions;
+
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden">
-        <div className="p-6">
-          <h3 className="font-bold text-gray-900 text-lg mb-4">
-            Suggested For You
-          </h3>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse flex gap-3">
-                <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900">Suggested Friends</h3>
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="animate-pulse flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-200 rounded-full shrink-0" />
+              <div className="flex-1">
+                <div className="h-3.5 bg-gray-200 rounded w-24 mb-1.5" />
+                <div className="h-3 bg-gray-200 rounded w-16" />
               </div>
-            ))}
-          </div>
+              <div className="h-8 w-16 bg-gray-200 rounded-lg" />
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
-  if (suggestions.length === 0) {
-    return null;
-  }
-
   return (
-    <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden">
-      <div className="p-6">
-        <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-          Suggested For You
-        </h3>
-
-        <div className="space-y-4">
-          {suggestions.map((user) => (
-            <div
-              key={user._id}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
-            >
-              <Link to={`/user/${user._id}`}>
-                <img
-                  src={user.photo || defaultAvatar}
-                  alt={user.name}
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md group-hover:ring-blue-200 transition-all"
-                />
-              </Link>
-
-              <div className="flex-1 min-w-0">
-                <Link to={`/user/${user._id}`}>
-                  <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">
-                    {user.name}
-                  </h4>
-                </Link>
-                <p className="text-xs text-gray-500 truncate">
-                  @{user.email?.split('@')[0] || 'user'}
-                </p>
-              </div>
-
-              <button
-                onClick={() => handleFollow(user._id)}
-                disabled={followingState[user._id]}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-all hover:shadow-lg disabled:opacity-50"
-              >
-                <FontAwesomeIcon icon={faUserPlus} className="mr-1" />
-                Follow
-              </button>
-            </div>
-          ))}
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <FontAwesomeIcon icon={faUserGroup} className="text-blue-600" />
+            <h3 className="font-semibold text-gray-900">Suggested Friends</h3>
+          </div>
+          <span className="bg-blue-100 text-blue-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+            {suggestions.length}
+          </span>
         </div>
 
-        {suggestions.length > 0 && (
-          <Link
-            to="/explore"
-            className="block text-center mt-4 text-sm text-blue-600 hover:text-blue-700 font-semibold"
+        {/* Search */}
+        <div className="relative">
+          <FontAwesomeIcon
+            icon={faSearch}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search friends..."
+            className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Suggestions List */}
+      <div className="px-3 pb-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-hide">
+        {filtered.map((user) => (
+          <div
+            key={user._id}
+            className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            See More
-          </Link>
+            <Link to={`/user/${user._id}`} className="shrink-0">
+              <img
+                src={user.photo || defaultAvatar}
+                alt={user.name}
+                onError={(e) => { e.target.src = defaultAvatar; }}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            </Link>
+
+            <div className="flex-1 min-w-0">
+              <Link to={`/user/${user._id}`}>
+                <h4 className="font-semibold text-gray-900 text-sm truncate hover:text-blue-600 transition-colors">
+                  {user.name}
+                </h4>
+              </Link>
+              <p className="text-xs text-gray-500 truncate">
+                @{user.username || user.name?.toLowerCase().replace(/\s+/g, "")}
+              </p>
+              <div className="flex items-center gap-3 mt-0.5">
+                <span className="text-[11px] text-gray-400">
+                  {user.followersCount ?? 0} followers
+                </span>
+                {user.mutualFollowersCount > 0 && (
+                  <span className="text-[11px] text-blue-500 font-medium">
+                    {user.mutualFollowersCount} mutual
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => handleFollow(user._id)}
+              disabled={followingState[user._id]}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              <FontAwesomeIcon icon={faUserPlus} className="text-[10px]" />
+              Follow
+            </button>
+          </div>
+        ))}
+
+        {filtered.length === 0 && searchQuery && (
+          <p className="text-center text-gray-400 text-sm py-4">No matches found</p>
+        )}
+        {filtered.length === 0 && !searchQuery && (
+          <p className="text-center text-gray-400 text-sm py-4">No suggestions right now</p>
         )}
       </div>
     </div>

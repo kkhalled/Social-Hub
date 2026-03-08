@@ -24,9 +24,9 @@ export default function SignUpForm() {
   const {formik , existErrorMsg ,formInputs ,setExistErrorMsg} = useSignUp();
   return (
     <>
-      <div className=" bg-white shadow-lg rounded-2xl min-w-6/10 m-auto px-4   py-8  text-sm ">
+      <div className="bg-white shadow-lg rounded-2xl w-full max-w-md mx-auto px-6 py-8 text-sm my-auto">
         <header className="text-center">
-          <h1 className="text-3xl font-bold">Crete Account</h1>
+          <h1 className="text-3xl font-bold">Create Account</h1>
           <span>
             Already have an account ?{" "}
             <Link className="text-blue-600" to={"/login"}>

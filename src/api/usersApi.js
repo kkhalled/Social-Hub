@@ -35,3 +35,21 @@ export const uploadProfilePhoto = async (formData) => {
   const { data } = await axiosInstance.put('/users/upload-photo', formData);
   return data;
 };
+
+// Upload cover photo
+export const uploadCoverPhoto = async (formData) => {
+  const { data } = await axiosInstance.put('/users/upload-cover', formData);
+  return data;
+};
+
+// Delete profile photo
+export const deleteProfilePhoto = async () => {
+  const { data } = await axiosInstance.delete('/users/delete-photo');
+  return data;
+};
+
+// Delete cover photo
+export const deleteCoverPhoto = async () => {
+  const { data } = await axiosInstance.delete('/users/delete-cover');
+  return data;
+};

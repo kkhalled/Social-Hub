@@ -1,29 +1,20 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import axiosInstance from "../../api/axiosInstance";
+import { getPost } from "../../api/postsApi";
 import { useParams, useNavigate, useLocation } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
-  faEllipsisVertical,
-  faPaperPlane,
-  faThumbsUp,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  faComment,
-  faShareFromSquare,
-  faHeart,
-  faThumbsUp as likebtn,
-} from "@fortawesome/free-regular-svg-icons";
-import CommentCard from "../../components/CommentCard/CommentCard";
 import PostSkeleton from "../../components/PostSkeleton/PostSkeleton";
 import PostDetails from "../../components/PostDetails/PostDetails";
 import EditPost from "../../components/EditPost/EditPost";
+import NavBar from "../../components/NavBar/NavBar";
 
 export default function Post() {
   const [post, setPost] = useState(null);
   const { id } = useParams();
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -33,31 +24,22 @@ export default function Post() {
 
   async function getSinglePost() {
     try {
-      const options = {
-        url: `/posts/${id}`,
-        method: "GET",
-      };
-
-      const { data } = await axiosInstance.request(options);
-      console.log(data);
-      if (data.message === "success") {
-        setPost(data.post);
-      }
+      const response = await getPost(id);
+      const post = response.post ?? response.data?.post ?? null;
+      if (post) setPost(post);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   }
 
   // Handle new comment - add it optimistically and then refresh
   function handleCommentCreated(newComment) {
     if (newComment && post) {
-      // Optimistically add the comment immediately
       setPost(prevPost => ({
-        prevPost,
-        comments: [(prevPost.comments || []), newComment]
+        ...prevPost,
+        comments: [...(prevPost.comments || []), newComment]
       }));
     }
-    // Then refresh from server to ensure we have the latest data
     getSinglePost();
   }
 
@@ -66,7 +48,8 @@ export default function Post() {
   }, []);
 
   return (
-    <div className="min-h-screen  bg-linear-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-0 py-8">
         {/* Back button */}
         <button
@@ -88,15 +71,23 @@ export default function Post() {
             body={post.body} 
             image={post.image} 
             name={post.user.name} 
+            username={post.user.username}
             photo={post.user.photo} 
             date={post.createdAt} 
-            comments={post.comments}  
-            commentsLimit={10}
             id={post._id || post.id}
             userId={post.user._id || post.user.id}
             onCommentCreated={handleCommentCreated}
-            userPhoto={post.user.photo}
-            userName={post.user.name}
+            likes={post.likes || []}
+            likesCount={post.likesCount ?? (post.likes?.length || 0)}
+            commentsCount={post.commentsCount ?? 0}
+            sharesCount={post.sharesCount ?? 0}
+            topComment={post.topComment || null}
+            isShare={post.isShare || false}
+            sharedPost={post.sharedPost || null}
+            privacy={post.privacy || "public"}
+            comments={post.comments || []}
+            isLiked={post.likes?.some(like => (typeof like === 'string' ? like : like._id) === (user?._id || user?.id)) || false}
+            isBookmarked={post.bookmarked || false}
           />
         )}
       </div>

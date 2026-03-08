@@ -100,6 +100,7 @@ export default function EditPost({ post, userPhoto, userName }) {
             <img
               src={userPhoto || post?.user?.photo || "/default-avatar.png"}
               alt={userName || post?.user?.name}
+              onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
               className="w-11 h-11 rounded-full object-cover"
             />
             <div className="flex-1">

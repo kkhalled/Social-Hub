@@ -22,7 +22,7 @@ export default function LogInForm() {
   const { formik, formInputs, invalidPassword } = useLogIn();
   return (
     <>
-      <div className=" bg-white shadow-lg rounded-2xl min-w-6/10 m-auto px-4   py-8  text-sm ">
+      <div className="bg-white shadow-lg rounded-2xl w-full max-w-md mx-auto px-6 py-8 text-sm my-auto">
         <header className="text-center">
           <h1 className="text-3xl font-bold">Sign In</h1>
           <span>

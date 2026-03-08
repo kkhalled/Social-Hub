@@ -1,115 +1,216 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
-import user from "../../assets/hero.jpg";
+﻿import React, { useContext, useEffect, useState, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faEllipsisVertical,
+  faEllipsis,
   faThumbsUp,
+  faGlobe,
+  faBookmark as faBookmarkSolid,
   faPen,
   faTrash,
+  faRetweet,
+  faChevronDown,
+  faLock,
+  faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faComment,
   faShareFromSquare,
-  faHeart,
-  faThumbsUp as likebtn,
+  faThumbsUp as faThumbsUpOutline,
+  faBookmark,
 } from "@fortawesome/free-regular-svg-icons";
 import CommentCard from "../CommentCard/CommentCard";
 import CreateComment from "../comments/CreateComment";
-import axiosInstance from "../../api/axiosInstance";
 import { AuthContext } from "./../../context/AuthContext";
 import { Link, useNavigate } from "react-router";
 import { PostsContext } from "../../context/PostProvider";
-import { toggleLikePost, toggleBookmarkPost, sharePost } from "../../api/postsApi";
+import { toggleLikePost, toggleBookmarkPost, sharePost, getPostLikes } from "../../api/postsApi";
+import { getPostComments } from "../../api/commentsApi";
 import { toast } from "react-toastify";
-import { faBookmark as faBookmarkSolid } from "@fortawesome/free-solid-svg-icons";
-import { faBookmark } from "@fortawesome/free-regular-svg-icons";
+import defaultAvatar from "../../assets/user.png";
 
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
+const PRIVACY_ICONS = { public: faGlobe, followers: faUserGroup, only_me: faLock };
+const PRIVACY_LABELS = { public: "Public", followers: "Followers", only_me: "Only me" };
 
 export default function PostDetails({
   body,
   image,
   name,
+  username,
   photo,
   date,
-  comments,
-  commentsLimit,
   id,
-  posts,
+  userId,
   onCommentCreated,
-  userPhoto,
-  userName,
   likes = [],
+  likesCount: initialLikesCount = 0,
+  commentsCount: initialCommentsCount = 0,
+  sharesCount = 0,
+  topComment = null,
   isLiked: initialIsLiked = false,
   isBookmarked: initialIsBookmarked = false,
+  isShare = false,
+  sharedPost = null,
+  privacy = "public",
+  comments,
+  commentsLimit = 1,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
-  const [commentsUpdated, setCommentsUpdated] = useState(comments);
   const postsContext = useContext(PostsContext);
   const deletePost = postsContext?.deletePost;
   const { user } = useContext(AuthContext);
-  
-  // Like and bookmark state - initialize from props
+
   const [isLiked, setIsLiked] = useState(initialIsLiked);
-  const [likesCount, setLikesCount] = useState(likes?.length || 0);
+  const [likesCount, setLikesCount] = useState(initialLikesCount || likes?.length || 0);
   const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
 
-  // Update state when props change (after refresh)
+  const [commentsCount, setCommentsCount] = useState(initialCommentsCount);
+  const [topCommentState, setTopCommentState] = useState(topComment);
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [fullComments, setFullComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
+
+  const [showLikesModal, setShowLikesModal] = useState(false);
+  const [likersList, setLikersList] = useState([]);
+  const [likersPage, setLikersPage] = useState(1);
+  const [likersHasMore, setLikersHasMore] = useState(false);
+  const [likersLoading, setLikersLoading] = useState(false);
+
   useEffect(() => {
     setIsLiked(initialIsLiked);
-    setLikesCount(likes?.length || 0);
+    setLikesCount(initialLikesCount || likes?.length || 0);
     setIsBookmarked(initialIsBookmarked);
-  }, [initialIsLiked, likes, initialIsBookmarked]);
+  }, [initialIsLiked, initialLikesCount, likes, initialIsBookmarked]);
 
-  // Handle like toggle
+  useEffect(() => {
+    if (Array.isArray(comments) && comments.length > 0) {
+      const first = comments[0];
+      if (typeof first === "object" && first?.commentCreator) {
+        setFullComments(comments);
+        setCommentsCount(comments.length);
+        setCommentsExpanded(true);
+      }
+    }
+  }, [comments]);
+
+  async function expandComments() {
+    if (commentsExpanded) { setCommentsExpanded(false); return; }
+    if (fullComments.length > 0) { setCommentsExpanded(true); return; }
+    try {
+      setLoadingComments(true);
+      setCommentsExpanded(true);
+      const response = await getPostComments(id);
+      if (response.success === true || response.message === "success") {
+        const fetched = response.data?.comments || response.comments || [];
+        setFullComments(fetched);
+        setCommentsCount(fetched.length);
+      }
+    } catch (err) {
+      toast.error("Could not load comments");
+    } finally {
+      setLoadingComments(false);
+    }
+  }
+
   const handleLike = async () => {
     try {
       const response = await toggleLikePost(id);
       if (response.success === true || response.message === "success") {
         setIsLiked(!isLiked);
-        setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-        toast.success(isLiked ? "Like removed" : "Post liked");
+        setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
       }
     } catch (error) {
-      console.error("Error toggling like:", error);
       toast.error(error.response?.data?.message || "Failed to like post");
     }
   };
 
-  // Handle bookmark toggle
   const handleBookmark = async () => {
     try {
       const response = await toggleBookmarkPost(id);
       if (response.success === true || response.message === "success") {
         setIsBookmarked(!isBookmarked);
-        toast.success(isBookmarked ? "Bookmark removed" : "Post bookmarked");
+        toast.success(isBookmarked ? "Bookmark removed" : "Post saved");
       }
     } catch (error) {
-      console.error("Error toggling bookmark:", error);
       toast.error(error.response?.data?.message || "Failed to bookmark post");
     }
   };
 
-  // Handle share post
-  const handleShare = async () => {
+  const handleShare = () => { setShareMessage(""); setShowShareModal(true); };
+
+  const openLikesModal = async () => {
+    if (likesCount === 0) return;
+    setShowLikesModal(true);
+    if (likersList.length > 0) return;
     try {
-      const response = await sharePost(id);
-      if (response.success === true || response.message === "success") {
-        toast.success(response.message || "Post shared successfully!");
-        // Copy link to clipboard
-        const postUrl = `${window.location.origin}/post/${id}`;
-        navigator.clipboard.writeText(postUrl);
-        toast.info("Link copied to clipboard");
+      setLikersLoading(true);
+      const response = await getPostLikes(id, 1, 20);
+      if (response.success || response.message === "success") {
+        const items = response.data?.likes || [];
+        setLikersList(items);
+        const { total } = response.meta?.pagination || {};
+        setLikersPage(1);
+        setLikersHasMore(items.length < (total || 0));
       }
-    } catch (error) {
-      console.error("Error sharing post:", error);
-      toast.error(error.response?.data?.message || "Failed to share post");
+    } catch (err) {
+      toast.error("Could not load likes");
+    } finally {
+      setLikersLoading(false);
     }
   };
 
-  // Close menu when clicking outside
+  const loadMoreLikers = async () => {
+    try {
+      setLikersLoading(true);
+      const nextPage = likersPage + 1;
+      const response = await getPostLikes(id, nextPage, 20);
+      if (response.success || response.message === "success") {
+        const items = response.data?.likes || [];
+        setLikersList((prev) => [...prev, ...items]);
+        setLikersPage(nextPage);
+        const { total } = response.meta?.pagination || {};
+        setLikersHasMore(likersList.length + items.length < (total || 0));
+      }
+    } catch (err) {
+      toast.error("Could not load more");
+    } finally {
+      setLikersLoading(false);
+    }
+  };
+
+  const handleShareSubmit = async () => {
+    try {
+      setShareLoading(true);
+      const response = await sharePost(id, shareMessage);
+      if (response.success === true || response.message === "success") {
+        toast.success("Post shared!");
+        setShowShareModal(false);
+        setShareMessage("");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to share post");
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -119,228 +220,462 @@ export default function PostDetails({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const isOwner = userId && user && (userId === user._id || userId === user.id);
+  const privacyIcon = PRIVACY_ICONS[privacy] || faGlobe;
+  const privacyLabel = PRIVACY_LABELS[privacy] || "Public";
+  const displayName = username || name?.toLowerCase().replace(/\s+/g, "");
+
   return (
-    <article className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-500 ">
+    <article className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-visible hover:shadow-md transition-shadow duration-300">
       {/* Header */}
-      <header className="flex justify-between items-center px-6 py-5 bg-linear-to-br from-gray-50/50 to-white">
-        <div className="flex items-center gap-3.5">
-          <div className="relative">
+      <div className="flex items-center justify-between px-5 py-4 min-h-[72px]">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Link to={userId ? `/user/${userId}` : "#"} className="relative group/avatar shrink-0">
             <img
-              src={photo}
-              className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md"
-              alt="User avatar"
+              src={photo || defaultAvatar}
+              className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100 group-hover/avatar:ring-blue-200 transition-all"
+              alt={name}
+              onError={(e) => { e.target.src = defaultAvatar; }}
             />
-            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></span>
-          </div>
-          <div className="flex flex-col">
-            <h4 className="font-bold text-gray-900 text-base leading-tight">
-              {name}
-            </h4>
+            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 border-2 border-white rounded-full" />
+          </Link>
+          <div>
             <Link
-              to={`/post/${id}`}
-              className="text-xs text-gray-500 mt-0.5 font-medium hover:text-gray-700 transition-colors"
+              to={userId ? `/user/${userId}` : "#"}
+              className="text-[15px] font-bold text-gray-900 hover:text-blue-600 transition-colors"
             >
-              {new Date(date).toLocaleString()}
+              {name}
             </Link>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-wrap">
+              <span className="font-medium text-gray-500">@{displayName}</span>
+              <span>&middot;</span>
+              <Link to={`/post/${id}`} className="hover:text-blue-500 transition-colors">{timeAgo(date)}</Link>
+              <span>&middot;</span>
+              <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded-md text-[10px] font-medium text-gray-500">
+                <FontAwesomeIcon icon={privacyIcon} className="text-[9px]" />
+                {privacyLabel}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="relative" ref={menuRef}>
+
+        {/* 3-dot Menu */}
+        <div className="relative shrink-0" ref={menuRef}>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 "
-            aria-label="Post options"
+            className="text-gray-400 hover:text-gray-600 w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all"
           >
-            <FontAwesomeIcon icon={faEllipsisVertical} className="text-lg" />
+            <FontAwesomeIcon icon={faEllipsis} />
           </button>
-
-          {/* Dropdown Menu */}
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-              {/* Edit Option */}
+            <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-2xl shadow-xl border border-gray-200 py-1.5 z-50">
               <button
-                onClick={() => {
-                  navigate(`/post/${id}?edit=true`);
-                  setIsMenuOpen(false);
-                }}
-                className="w-full px-4 py-3 flex items-center gap-3 text-gray-700 hover:bg-blue-50 transition-colors duration-200 border-b border-gray-100"
+                onClick={() => { handleBookmark(); setIsMenuOpen(false); }}
+                className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
-                <FontAwesomeIcon icon={faPen} className="text-blue-500" />
-                <span className="font-medium text-sm">Edit Post</span>
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${isBookmarked ? "bg-yellow-100" : "bg-gray-100"}`}>
+                  <FontAwesomeIcon icon={isBookmarked ? faBookmarkSolid : faBookmark} className={`text-xs ${isBookmarked ? "text-yellow-500" : "text-gray-400"}`} />
+                </span>
+                {isBookmarked ? "Unsave post" : "Save post"}
               </button>
-
-              {/* Delete Option */}
-              <button
-                onClick={() => {
-                  if (deletePost) {
-                    deletePost(id);
-                  }
-                  setIsMenuOpen(false);
-                }}
-                className="w-full px-4 py-3 flex items-center gap-3 text-gray-700 hover:bg-red-50 transition-colors duration-200"
-              >
-                <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
-                <FontAwesomeIcon icon={faTrash} className="text-red-500" />
-                <span className="font-medium text-sm">Delete Post</span>
-              </button>
+              {isOwner && (
+                <>
+                  <button
+                    onClick={() => { navigate(`/post/${id}?edit=true`); setIsMenuOpen(false); }}
+                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <FontAwesomeIcon icon={faPen} className="text-xs text-blue-500" />
+                    </span>
+                    Edit post
+                  </button>
+                  <div className="my-1 mx-3 border-t border-gray-100" />
+                  <button
+                    onClick={() => { if (deletePost) deletePost(id); setIsMenuOpen(false); }}
+                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                      <FontAwesomeIcon icon={faTrash} className="text-xs text-red-500" />
+                    </span>
+                    Delete post
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
-      </header>
-
-      {/* Caption */}
-      <div className="px-6 pb-4">
-        <p className="text-gray-800 text-[15px] leading-relaxed font-medium">
-          {body}
-        </p>
       </div>
 
-      {/* Image with linear overlay effect */}
-      {image ? (
-        <figure className="w-full bg-linear-to-br from-gray-100 to-gray-50 relative group">
-          <img
-            src={image}
-            className="w-full max-h-125 object-cover  transition-transform duration-700"
-            alt="Post content"
-          />
-          <div className="absolute inset-0 bg-linear-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        </figure>
-      ) : (
-        ""
+      {/* Body */}
+      {body && (
+        <div className="px-5 pb-3">
+          <p className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-line">{body}</p>
+        </div>
       )}
 
-      {/* Reactions summary with enhanced styling */}
-      <div className="flex justify-between items-center px-6 py-4 bg-linear-to-r from-gray-50/30 to-transparent">
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
-            <span className="bg-linear-to-br from-blue-500 to-blue-600 w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white transform hover:scale-110 transition-transform cursor-pointer">
-              <FontAwesomeIcon
-                icon={faThumbsUp}
-                className="text-white text-[10px]"
-              />
-            </span>
-            <span className="bg-linear-to-br from-red-500 to-pink-600 w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white transform hover:scale-110 transition-transform cursor-pointer">
-              <FontAwesomeIcon
-                icon={faHeart}
-                className="text-white text-[10px]"
-              />
-            </span>
+      {/* Shared post preview */}
+      {isShare && sharedPost && (
+        <div className="mx-5 mb-3 border border-gray-200 rounded-2xl overflow-hidden bg-gradient-to-b from-gray-50 to-white">
+          <div className="px-4 pt-3 pb-2 flex items-center gap-2.5">
+            <img
+              src={sharedPost.user?.photo || defaultAvatar}
+              alt={sharedPost.user?.name}
+              onError={(e) => { e.target.src = defaultAvatar; }}
+              className="w-8 h-8 rounded-full object-cover ring-2 ring-white"
+            />
+            <div>
+              <Link
+                to={`/user/${sharedPost.user?._id}`}
+                className="text-sm font-bold text-gray-900 hover:text-blue-600 transition-colors"
+              >
+                {sharedPost.user?.name}
+              </Link>
+              <div className="text-xs text-gray-400">
+                @{sharedPost.user?.username || sharedPost.user?.name?.toLowerCase().replace(/\s+/g, "")}
+                {" \u00B7 "}{timeAgo(sharedPost.createdAt)}
+              </div>
+            </div>
           </div>
-          <button className="text-sm text-gray-700 hover:text-gray-900 hover:underline font-semibold transition-colors">
-            {likesCount || 0}
+          {sharedPost.body && (
+            <p className="px-4 pb-2 text-sm text-gray-600 leading-relaxed">{sharedPost.body}</p>
+          )}
+          {sharedPost.image && (
+            <Link to={`/post/${sharedPost._id}`}>
+              <img src={sharedPost.image} alt="Shared post" className="w-full max-h-64 object-cover" />
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Own image */}
+      {image && !isShare && (
+        <div className="w-full">
+          <img src={image} className="w-full max-h-[500px] object-cover" alt="Post content" />
+        </div>
+      )}
+
+      {/* Stats Row */}
+      <div className="flex items-center justify-between px-5 py-2.5 text-[13px] text-gray-500">
+        <button
+          onClick={openLikesModal}
+          className="flex items-center gap-1.5 hover:text-blue-600 transition-colors disabled:cursor-default group/likes"
+          disabled={likesCount === 0}
+        >
+          <span className="bg-gradient-to-br from-blue-500 to-blue-600 w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+            <FontAwesomeIcon icon={faThumbsUp} className="text-white text-[9px]" />
+          </span>
+          <span className="group-hover/likes:underline">{likesCount}</span>
+        </button>
+        <div className="flex items-center gap-4">
+          <span>{sharesCount} shares</span>
+          <button
+            onClick={expandComments}
+            className="hover:text-blue-600 hover:underline transition-colors"
+          >
+            {commentsCount} comments
           </button>
         </div>
-        <button className="text-sm text-gray-600 hover:text-gray-900 hover:underline font-semibold transition-colors">
-          <span className="space-x-2">{commentsUpdated?.length} comments</span>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="border-t border-gray-100 grid grid-cols-3 text-[13px] font-semibold">
+        <button
+          onClick={handleLike}
+          className={`flex items-center justify-center gap-2 py-3 transition-all ${
+            isLiked
+              ? "text-blue-600 bg-blue-50/50"
+              : "text-gray-500 hover:bg-blue-50/50 hover:text-blue-600"
+          }`}
+        >
+          <FontAwesomeIcon icon={isLiked ? faThumbsUp : faThumbsUpOutline} className="text-base" />
+          <span>{isLiked ? "Liked" : "Like"}</span>
+        </button>
+
+        <button
+          onClick={expandComments}
+          className={`flex items-center justify-center gap-2 py-3 border-x border-gray-100 transition-all ${
+            commentsExpanded
+              ? "text-green-600 bg-green-50/50"
+              : "text-gray-500 hover:bg-green-50/50 hover:text-green-600"
+          }`}
+        >
+          <FontAwesomeIcon icon={faComment} className="text-base" />
+          <span>Comment</span>
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="flex items-center justify-center gap-2 py-3 text-gray-500 hover:bg-orange-50/50 hover:text-orange-500 transition-all"
+        >
+          <FontAwesomeIcon icon={faShareFromSquare} className="text-base" />
+          <span>Share</span>
         </button>
       </div>
 
-      {/* Action bar with modern linear hover */}
-      <div className="border-t border-gray-100">
-        <div className="grid grid-cols-4 text-gray-600 text-[15px] font-semibold">
-          <button 
-            onClick={handleLike}
-            className={`relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-blue-50 hover:to-transparent transition-all duration-300 group overflow-hidden ${isLiked ? 'text-blue-600' : ''}`}>
-            <div className="absolute inset-0 bg-linear-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <FontAwesomeIcon
-              icon={isLiked ? faThumbsUp : likebtn}
-              className="text-lg group-hover:scale-125 group-hover:text-blue-600 transition-all duration-300 relative z-10"
+      {/* Top Comment (collapsed) */}
+      {!commentsExpanded && topCommentState && commentsCount > 0 && (
+        <div className="border-t border-gray-100 px-5 pt-3 pb-3">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Top Comment</span>
+              <span className="bg-blue-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {commentsCount}
+              </span>
+            </div>
+            <button
+              onClick={expandComments}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+            >
+              View all
+            </button>
+          </div>
+          <div className="flex gap-2.5 items-start">
+            <img
+              src={topCommentState.commentCreator?.photo || defaultAvatar}
+              alt={topCommentState.commentCreator?.name}
+              onError={(e) => { e.target.src = defaultAvatar; }}
+              className="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-gray-100"
             />
-            <span className="group-hover:text-blue-600 relative z-10">
-              {isLiked ? 'Liked' : 'Like'}
-            </span>
-          </button>
-
-          <button className="relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-green-50 hover:to-transparent transition-all duration-300 group border-x border-gray-100 overflow-hidden">
-            <div className="absolute inset-0 bg-linear-to-r from-green-500/0 via-green-500/5 to-green-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <FontAwesomeIcon
-              icon={faComment}
-              className="text-lg group-hover:scale-125 group-hover:text-green-600 transition-all duration-300 relative z-10"
-            />
-            <span className="group-hover:text-green-600 relative z-10">
-              Comment
-            </span>
-          </button>
-
-          <button 
-            onClick={handleBookmark}
-            className={`relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-yellow-50 hover:to-transparent transition-all duration-300 group border-r border-gray-100 overflow-hidden ${isBookmarked ? 'text-yellow-600' : ''}`}>
-            <div className="absolute inset-0 bg-linear-to-r from-yellow-500/0 via-yellow-500/5 to-yellow-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <FontAwesomeIcon
-              icon={isBookmarked ? faBookmarkSolid : faBookmark}
-              className="text-lg group-hover:scale-125 group-hover:text-yellow-600 transition-all duration-300 relative z-10"
-            />
-            <span className="group-hover:text-yellow-600 relative z-10">
-              {isBookmarked ? 'Saved' : 'Save'}
-            </span>
-          </button>
-
-          <button 
-            onClick={handleShare}
-            className="relative flex items-center justify-center gap-2.5 py-3.5 hover:bg-linear-to-br hover:from-purple-50 hover:to-transparent transition-all duration-300 group overflow-hidden">
-            <div className="absolute inset-0 bg-linear-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <FontAwesomeIcon
-              icon={faShareFromSquare}
-              className="text-lg group-hover:scale-125 group-hover:text-purple-600 transition-all duration-300 relative z-10"
-            />
-            <span className="group-hover:text-purple-600 relative z-10">
-              Share
-            </span>
-          </button>
+            <div className="bg-gray-50 rounded-2xl rounded-tl-sm px-3.5 py-2.5 max-w-[85%] border border-gray-100">
+              <span className="text-xs font-bold text-gray-900 mr-1.5">
+                {topCommentState.commentCreator?.name}
+              </span>
+              <span className="text-[13px] text-gray-600 leading-relaxed">{topCommentState.content}</span>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Comments section with subtle linear background */}
-      <div className="px-6 py-5 space-y-4 bg-linear-to-br from-gray-50/50 via-blue-50/20 to-purple-50/20 border-t border-gray-100">
-        {commentsUpdated?.length > 0 ? (
-          <>
-            {(commentsUpdated || []).slice(0, commentsLimit).map((comment) => (
-              <CommentCard
-                key={comment._id}
-                commentCreatorName={comment.commentCreator.name}
-                commentCreatorImg={comment.commentCreator.photo}
-                content={comment.content}
-                commentId={comment._id}
-                postId={id}
-                date={comment.createdAt}
-                setCommentsUpdated={setCommentsUpdated}
-              />
-            ))}
+      {/* Expanded Comments */}
+      {commentsExpanded && (
+        <div className="border-t border-gray-100">
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-gray-800">Comments</span>
+              <span className="bg-blue-600 text-white text-[11px] font-bold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center">
+                {commentsCount}
+              </span>
+            </div>
+            <button className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors">
+              Most relevant
+              <FontAwesomeIcon icon={faChevronDown} className="text-[9px]" />
+            </button>
+          </div>
 
-            {/* Show "View all comments" button if there are more comments than the limit */}
-            {commentsUpdated.length > commentsLimit && (
-              <Link
-                to={`/post/${id}`}
-                className="block text-center py-3 mt-2 text-sm font-semibold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-300 group"
-              >
-                <span className="inline-flex items-center gap-2">
-                  View all {commentsUpdated.length} comments
-                  <FontAwesomeIcon
-                    icon={faComment}
-                    className="text-xs group-hover:scale-110 transition-transform duration-300"
+          <div className="px-5 space-y-3 pb-3">
+            {loadingComments ? (
+              <div className="space-y-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="animate-pulse flex gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-gray-200 rounded w-24" />
+                      <div className="h-3 bg-gray-100 rounded w-48" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : fullComments.length > 0 ? (
+              <>
+                {fullComments.map((comment) => (
+                  <CommentCard
+                    key={comment._id}
+                    commentCreatorName={comment.commentCreator?.name || "User"}
+                    commentCreatorImg={comment.commentCreator?.photo || ""}
+                    commentCreatorId={comment.commentCreator?._id || comment.commentCreator?.id || ""}
+                    content={comment.content}
+                    commentId={comment._id}
+                    postId={id}
+                    date={comment.createdAt}
+                    setCommentsUpdated={(updater) => {
+                      setFullComments((prev) => {
+                        const next = typeof updater === "function" ? updater(prev) : updater;
+                        setCommentsCount(next.length);
+                        return next;
+                      });
+                    }}
+                    likes={comment.likes || []}
+                    replies={comment.replies || []}
+                    repliesCount={comment.repliesCount ?? comment.replies?.length ?? 0}
+                    isLiked={
+                      comment.likes?.some((like) =>
+                        (typeof like === "string" ? like : like._id) === (user?._id || user?.id)
+                      ) || false
+                    }
                   />
-                </span>
-              </Link>
+                ))}
+                {commentsCount > fullComments.length && (
+                  <Link to={`/post/${id}`} className="block text-sm font-semibold text-blue-600 hover:underline pt-1">
+                    View all {commentsCount} comments
+                  </Link>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-sm text-gray-400">No comments yet. Be the first!</p>
+              </div>
             )}
-          </>
-        ) : (
-          <p className="text-sm text-gray-500 text-center py-4">
-            No comments yet
-          </p>
-        )}
-      </div>
+          </div>
 
-      {/* Create Comment Form */}
-      <CreateComment 
-        postId={id} 
-        onCommentCreated={onCommentCreated}
-        userPhoto={userPhoto}
-        userName={userName}
-        setCommentsUpdated={setCommentsUpdated}
-        comments={comments}
+          <CreateComment
+            postId={id}
+            onCommentCreated={onCommentCreated}
+            setCommentsUpdated={(updater) => {
+              setFullComments((prev) => {
+                const next = typeof updater === "function" ? updater(prev) : updater;
+                setCommentsCount(Array.isArray(next) ? next.length : commentsCount + 1);
+                if (Array.isArray(next) && next.length > 0) setTopCommentState(next[next.length - 1]);
+                return Array.isArray(next) ? next : prev;
+              });
+            }}
+          />
+        </div>
+      )}
 
-        
-      />
+      {/* Likes Modal */}
+      {showLikesModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+          onClick={() => setShowLikesModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <FontAwesomeIcon icon={faThumbsUp} className="text-white text-sm" />
+                </span>
+                <h3 className="text-base font-bold text-white">People who reacted</h3>
+              </div>
+              <button
+                onClick={() => setShowLikesModal(false)}
+                className="text-white/70 hover:text-white w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-96">
+              {likersLoading && likersList.length === 0 ? (
+                <div className="space-y-1 p-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="animate-pulse flex items-center gap-3 px-2 py-2.5">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 bg-gray-200 rounded w-28" />
+                        <div className="h-2.5 bg-gray-100 rounded w-20" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <ul className="py-1">
+                  {likersList.map((person) => (
+                    <li key={person._id}>
+                      <Link
+                        to={`/user/${person._id}`}
+                        onClick={() => setShowLikesModal(false)}
+                        className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        <img
+                          src={person.photo || defaultAvatar}
+                          alt={person.name}
+                          onError={(e) => { e.target.src = defaultAvatar; }}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 shrink-0"
+                        />
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{person.name}</p>
+                          {person.username && (
+                            <p className="text-xs text-gray-400">@{person.username}</p>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {likersHasMore && (
+              <div className="border-t border-gray-100 p-4">
+                <button
+                  onClick={loadMoreLikers}
+                  disabled={likersLoading}
+                  className="w-full py-2.5 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {likersLoading ? "Loading..." : "Load more"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+          onClick={() => setShowShareModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <FontAwesomeIcon icon={faShareFromSquare} className="text-white text-sm" />
+                </span>
+                <h3 className="text-base font-bold text-white">Share post</h3>
+              </div>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="text-white/70 hover:text-white w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="px-6 pt-4 pb-2">
+              <textarea
+                value={shareMessage}
+                onChange={(e) => setShareMessage(e.target.value)}
+                placeholder="Say something about this..."
+                rows={3}
+                className="w-full resize-none outline-none text-sm text-gray-800 placeholder:text-gray-400 bg-gray-50 rounded-xl p-3 border border-gray-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+            </div>
+            <div className="mx-6 my-3 border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+              <div className="px-4 py-3 flex items-center gap-2.5 bg-white">
+                <img src={photo || defaultAvatar} alt={name} className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100" />
+                <div>
+                  <p className="text-sm font-bold text-gray-900">{name}</p>
+                  <p className="text-xs text-gray-400">@{displayName}</p>
+                </div>
+              </div>
+              {body && <p className="px-4 py-2.5 text-sm text-gray-600 leading-relaxed bg-white border-t border-gray-100">{body}</p>}
+              {image && <img src={image} alt="Post" className="w-full max-h-48 object-cover" />}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="px-5 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShareSubmit}
+                disabled={shareLoading}
+                className="px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm hover:shadow transition-all disabled:opacity-60"
+              >
+                {shareLoading ? "Sharing..." : "Share now"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

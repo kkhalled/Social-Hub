@@ -1,7 +1,7 @@
-import React, { useState, useContext } from "react";
-import user from "../../assets/user.png";
+import React, { useState, useContext, useEffect } from "react";
+import defaultAvatar from "../../assets/user.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXmark, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
+import { faXmark, faHeart as faHeartSolid, faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { faHeart } from "@fortawesome/free-regular-svg-icons";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -10,9 +10,22 @@ import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import { toggleLikeComment, createReply, getCommentReplies } from "../../api/commentsApi";
 
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 export default function CommentCard({
   commentCreatorName,
   commentCreatorImg,
+  commentCreatorId,
   content,
   date,
   commentId,
@@ -20,19 +33,35 @@ export default function CommentCard({
   onUpdate,
   setCommentsUpdated,
   comments,
+  likes = [],
+  replies = [],
+  repliesCount: initialRepliesCount,
+  isLiked: initialIsLiked = false,
 }) {
   const [isEditMode, setIsEditMode] = useState(false);
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
   const [updatedContent, setUpdatedContent] = useState(content);
-  
-  // Like and reply state
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+
+  const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [likesCount, setLikesCount] = useState(likes?.length || 0);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState("");
-  const [replies, setReplies] = useState([]);
-  const [showReplies, setShowReplies] = useState(false);
-  const [repliesCount, setRepliesCount] = useState(0);
+  const [repliesState, setRepliesState] = useState(replies || []);
+  const [showReplies, setShowReplies] = useState(replies && replies.length > 0);
+  const [repliesCount, setRepliesCount] = useState(initialRepliesCount ?? replies?.length ?? 0);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+
+  useEffect(() => {
+    setIsLiked(initialIsLiked);
+    setLikesCount(likes?.length || 0);
+    setRepliesState(replies || []);
+    const count = initialRepliesCount ?? replies?.length ?? 0;
+    setRepliesCount(count);
+    // Show replies if they exist in the data
+    if (replies && replies.length > 0) {
+      setShowReplies(true);
+    }
+  }, [initialIsLiked, likes, replies, initialRepliesCount]);
 
   const validationSchema = Yup.object({
     content: Yup.string()
@@ -47,349 +76,313 @@ export default function CommentCard({
         `/posts/${postId}/comments/${commentId}`,
         { content: values.content }
       );
-      console.log("Comment updated successfully:", data);
-      
       if (data.success === true || data.message === "success") {
-        const updatedComment = data.data?.comment || data.comment;
-        setUpdatedContent(updatedComment?.content || values.content);
-        toast.success(data.message || "Comment updated successfully");
-
-        if (onUpdate) {
-          onUpdate(values.content);
-        }
+        setUpdatedContent(values.content);
         setIsEditMode(false);
+        toast.success(data.message || "Comment updated");
       }
     } catch (error) {
-      console.error("Error updating comment:", error);
       toast.error(error.response?.data?.message || "Failed to update comment");
     }
   }
 
-  const formik = useFormik({
-    initialValues: {
-      content: content,
-    },
-    validationSchema: validationSchema,
-    onSubmit: handleSubmit,
-  });
-
-  const handleCancel = () => {
+  function handleCancel() {
     formik.resetForm();
     setIsEditMode(false);
-  };
+  }
 
-  // delete
+  const formik = useFormik({
+    initialValues: { content: updatedContent },
+    validationSchema,
+    onSubmit: handleSubmit,
+    enableReinitialize: true,
+  });
+
   async function deleteComment() {
     try {
       const { data } = await axiosInstance.delete(
         `/posts/${postId}/comments/${commentId}`
       );
-
       if (data.success === true || data.message === "success") {
         toast.success(data.message || "Comment deleted");
-
         setCommentsUpdated(prev =>
           prev.filter(comment => comment._id !== commentId)
         );
       }
     } catch (error) {
-      console.error("Failed to delete comment:", error);
       toast.error(error.response?.data?.message || "Failed to delete comment");
     }
   }
 
-  // Handle like toggle
   const handleLike = async () => {
     try {
       const response = await toggleLikeComment(postId, commentId);
       if (response.success === true || response.message === "success") {
         setIsLiked(!isLiked);
         setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-        toast.success(isLiked ? "Like removed" : "Comment liked");
       }
     } catch (error) {
-      console.error("Error toggling like:", error);
       toast.error(error.response?.data?.message || "Failed to like comment");
     }
   };
 
-  // Handle reply submission
   const handleReplySubmit = async (e) => {
     e.preventDefault();
     if (!replyContent.trim()) return;
-
     try {
       const response = await createReply(postId, commentId, replyContent);
       if (response.success === true || response.message === "success") {
         toast.success(response.message || "Reply added");
         setReplyContent("");
         setShowReplyForm(false);
-        // Refresh replies
         loadReplies();
         setRepliesCount(prev => prev + 1);
       }
     } catch (error) {
-      console.error("Error adding reply:", error);
       toast.error(error.response?.data?.message || "Failed to add reply");
     }
   };
 
-  // Load replies
   const loadReplies = async () => {
+    // If already showing, hide
+    if (showReplies) {
+      setShowReplies(false);
+      return;
+    }
+    
+    // If we already have replies in state, just show them
+    if (repliesState.length > 0) {
+      setShowReplies(true);
+      return;
+    }
+    
+    // Fetch from API
+    if (loadingReplies) return;
     try {
+      setLoadingReplies(true);
       const response = await getCommentReplies(postId, commentId);
       if (response.success === true || response.message === "success") {
         const repliesData = response.data?.replies || response.replies || [];
-        setReplies(repliesData);
+        setRepliesState(repliesData);
+        setRepliesCount(repliesData.length);
         setShowReplies(true);
       }
     } catch (error) {
-      console.error("Error loading replies:", error);
       toast.error(error.response?.data?.message || "Failed to load replies");
+    } finally {
+      setLoadingReplies(false);
     }
   };
 
+  const isOwner = commentCreatorId && user && (commentCreatorId === user._id || commentCreatorId === user.id);
+  const avatarSrc = commentCreatorImg && !commentCreatorImg.includes("undefined") ? commentCreatorImg : defaultAvatar;
 
   return (
     <>
-      <div className="flex gap-2.5">
+      <div className="flex gap-2.5 group/comment">
         {/* Avatar */}
         <img
-          src={
-            commentCreatorImg.includes("undefined") ? user : commentCreatorImg
-          }
-          alt="User avatar"
-          className="size-8 rounded-full object-cover shadow-sm shrink"
+          src={avatarSrc}
+          alt={commentCreatorName}
+          onError={(e) => { e.target.src = defaultAvatar; }}
+          className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-100 shrink-0 mt-0.5"
         />
 
         {/* Comment content */}
-        <div className="flex-1 space-y-1.5">
-          {/* Bubble */}
-          <div className="bg-white rounded-2xl rounded-tl-sm ps-4 pe-14 py-2.5 shadow-sm border border-gray-100 inline-block max-w-full">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="font-semibold text-gray-900 text-[15px]">
-                {commentCreatorName}
-              </span>
-              <span className="text-xs text-gray-400">
-                {new Date(date).toLocaleDateString()}
-              </span>
-            </div>
-            <p className="text-gray-700 text-[14px] leading-relaxed">
-              {updatedContent}
-            </p>
-          </div>
+        <div className="flex-1 min-w-0">
+          {/* Edit mode */}
+          {isEditMode ? (
+            <form onSubmit={formik.handleSubmit} className="space-y-2">
+              <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm overflow-hidden">
+                <textarea
+                  name="content"
+                  value={formik.values.content}
+                  onChange={formik.handleChange}
+                  className="w-full px-4 py-3 text-sm text-gray-800 resize-none outline-none"
+                  rows={2}
+                  autoFocus
+                />
+                <div className="flex items-center justify-between px-3 pb-2">
+                  <span className="text-[10px] text-gray-400">Press Esc to cancel</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {formik.errors.content && formik.touched.content && (
+                <p className="text-xs text-red-500 px-1">{formik.errors.content}</p>
+              )}
+            </form>
+          ) : (
+            <>
+              {/* Bubble */}
+              <div className="bg-gray-50 rounded-2xl rounded-tl-sm px-4 py-2.5 border border-gray-100 inline-block max-w-full">
+                <div className="flex items-baseline gap-2 mb-0.5">
+                  <span className="font-bold text-gray-900 text-[13px]">
+                    {commentCreatorName}
+                  </span>
+                </div>
+                <p className="text-gray-700 text-[13px] leading-relaxed">
+                  {updatedContent}
+                </p>
+              </div>
 
-          {/* Meta actions */}
-          <div className="flex items-center gap-4 text-xs px-2">
-            <button 
-              onClick={handleLike}
-              className={`flex items-center gap-1 font-medium transition-colors hover:underline ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}>
-              <FontAwesomeIcon icon={isLiked ? faHeartSolid : faHeart} />
-              {isLiked ? 'Liked' : 'Like'}
-            </button>
-
-            <button
-              onClick={() => setShowReplyForm(!showReplyForm)}
-              className="text-gray-500 hover:text-blue-600 font-medium transition-colors hover:underline"
-            >
-              Reply
-            </button>
-
-            <button
-              onClick={() => setIsEditMode(true)}
-              className="text-gray-500 hover:text-blue-600 font-medium transition-colors hover:underline"
-            >
-              Edit
-            </button>
-            <button
-              onClick={deleteComment}
-              className="text-gray-500 hover:text-red-600 font-medium transition-colors hover:underline"
-            >
-              Delete
-            </button>
-            
-            {likesCount > 0 && (
-              <>
-                <span className="text-gray-400">·</span>
-                <span className="text-gray-400">
-                  {likesCount} {likesCount === 1 ? 'like' : 'likes'}
+              {/* Meta actions */}
+              <div className="flex items-center gap-3.5 text-[11px] px-1 mt-1.5">
+                <span className="text-gray-500 font-medium">
+                  {timeAgo(date)}
                 </span>
-              </>
-            )}
 
-            {repliesCount > 0 && (
-              <>
-                <span className="text-gray-400">·</span>
-                <button 
-                  onClick={showReplies ? () => setShowReplies(false) : loadReplies}
-                  className="text-gray-500 hover:text-blue-600 transition-colors"
+                <button
+                  onClick={handleLike}
+                  className={`font-semibold transition-all ${
+                    isLiked
+                      ? "text-blue-600"
+                      : "text-gray-500 hover:text-blue-600"
+                  }`}
                 >
-                  {showReplies ? 'Hide' : 'View'} {repliesCount} {repliesCount === 1 ? 'reply' : 'replies'}
+                  Like ({likesCount})
                 </button>
-              </>
-            )}
-          </div>
+
+                {repliesCount > 0 ? (
+                  <button
+                    onClick={loadReplies}
+                    disabled={loadingReplies}
+                    className="text-gray-500 hover:text-blue-600 font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {loadingReplies ? "Loading..." : showReplies ? `Hide replies (${repliesCount})` : `Reply (${repliesCount})`}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowReplyForm(!showReplyForm)}
+                    className="text-gray-500 hover:text-blue-600 font-semibold transition-colors"
+                  >
+                    Reply
+                  </button>
+                )}
+
+                {isOwner && (
+                  <>
+                    <button
+                      onClick={() => setIsEditMode(true)}
+                      className="text-gray-400 hover:text-blue-600 font-semibold transition-colors opacity-0 group-hover/comment:opacity-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={deleteComment}
+                      className="text-gray-400 hover:text-red-500 font-semibold transition-colors opacity-0 group-hover/comment:opacity-100"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Reply Form */}
           {showReplyForm && (
-            <form onSubmit={handleReplySubmit} className="mt-2 px-2">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="Write a reply..."
-                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+            <form onSubmit={handleReplySubmit} className="mt-2.5 pl-1">
+              <div className="flex items-center gap-2">
+                <img
+                  src={user?.photo || defaultAvatar}
+                  alt="You"
+                  onError={(e) => { e.target.src = defaultAvatar; }}
+                  className="w-6 h-6 rounded-full object-cover shrink-0 ring-1 ring-gray-200"
                 />
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Reply
-                </button>
+                <div className="flex-1 flex items-center bg-white border border-gray-200 rounded-full overflow-hidden focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                  <input
+                    type="text"
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder="Write a reply..."
+                    className="flex-1 px-3.5 py-2 text-xs outline-none bg-transparent text-gray-800 placeholder:text-gray-400"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setShowReplyForm(false);
+                        setReplyContent("");
+                      }
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!replyContent.trim()}
+                    className="px-3 py-2 text-blue-600 hover:text-blue-700 disabled:text-gray-300 transition-colors"
+                  >
+                    <FontAwesomeIcon icon={faPaperPlane} className="text-xs" />
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowReplyForm(false);
-                    setReplyContent("");
-                  }}
-                  className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  onClick={() => { setShowReplyForm(false); setReplyContent(""); }}
+                  className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors shrink-0"
                 >
-                  Cancel
+                  <FontAwesomeIcon icon={faXmark} className="text-[10px]" />
                 </button>
               </div>
             </form>
           )}
 
           {/* Replies List */}
-          {showReplies && replies.length > 0 && (
-            <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-200">
-              {replies.map((reply) => (
-                <div key={reply._id} className="flex gap-2">
-                  <img
-                    src={reply.commentCreator?.photo?.includes("undefined") ? user : reply.commentCreator?.photo || user}
-                    alt="Reply avatar"
-                    className="size-6 rounded-full object-cover shadow-sm"
-                  />
-                  <div className="flex-1">
-                    <div className="bg-gray-50 rounded-lg px-3 py-2">
-                      <div className="flex items-baseline gap-2 mb-0.5">
-                        <span className="font-semibold text-gray-900 text-xs">
-                          {reply.commentCreator?.name || 'User'}
-                        </span>
-                        <span className="text-[10px] text-gray-400">
-                          {new Date(reply.createdAt).toLocaleDateString()}
-                        </span>
+          {showReplies && repliesState.length > 0 && (
+            <div className="mt-3 space-y-2.5">
+              <div className="pl-3 border-l-2 border-blue-100 space-y-2.5">
+                {repliesState.map((reply) => {
+                  const replyAvatar = reply.commentCreator?.photo && !reply.commentCreator.photo.includes("undefined")
+                    ? reply.commentCreator.photo
+                    : defaultAvatar;
+                  return (
+                    <div key={reply._id} className="flex gap-2">
+                      <img
+                        src={replyAvatar}
+                        alt={reply.commentCreator?.name || "User"}
+                        onError={(e) => { e.target.src = defaultAvatar; }}
+                        className="w-6 h-6 rounded-full object-cover ring-1 ring-gray-200 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-xl rounded-tl-sm px-3 py-2 border border-gray-100">
+                          <div className="flex items-baseline gap-2 mb-0.5">
+                            <span className="font-bold text-gray-900 text-[11px]">
+                              {reply.commentCreator?.name || "User"}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              {timeAgo(reply.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-[12px] leading-relaxed">{reply.content}</p>
+                        </div>
                       </div>
-                      <p className="text-gray-700 text-xs">{reply.content}</p>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
+              
+              {/* Add reply button when viewing replies */}
+              {!showReplyForm && (
+                <button
+                  onClick={() => setShowReplyForm(true)}
+                  className="text-gray-500 hover:text-blue-600 font-semibold text-[11px] pl-3 transition-colors"
+                >
+                  Add a reply...
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
-
-      {/* edit */}
-      {isEditMode && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-9999 p-4 "
-          onClick={handleCancel}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-lg max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col "
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shrink-0">
-              <h3 className="text-lg font-bold text-gray-900">Edit Comment</h3>
-              <button
-                onClick={handleCancel}
-                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-              >
-                <FontAwesomeIcon icon={faXmark} className="text-xl" />
-              </button>
-            </div>
-
-            <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
-              {/* User Info */}
-              <div className="flex items-center gap-3">
-                <img
-                  src={
-                    commentCreatorImg.includes("undefined")
-                      ? user
-                      : commentCreatorImg
-                  }
-                  alt="User avatar"
-                  className="size-10 rounded-full object-cover shadow-sm"
-                />
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">
-                    {commentCreatorName}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(date).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Textarea */}
-              <form onSubmit={formik.handleSubmit}>
-                <textarea
-                  value={formik.values.content}
-                  name="content"
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  error={formik.errors.content}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none min-h-32 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
-                  placeholder="Edit your comment..."
-                />
-
-                {/* Error Message */}
-                {formik.touched.content && formik.errors.content && (
-                  <p className="text-red-500 text-sm mt-2">
-                    {formik.errors.content}
-                  </p>
-                )}
-
-                {/* Character Count */}
-                <div className="text-xs text-gray-500 text-right mt-2">
-                  {formik.values.content.length} / 500 characters
-                </div>
-
-                {/* Footer */}
-                <div className="flex gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    disabled={formik.isSubmitting}
-                    className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-900 font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    // disabled={formik.isSubmitting || !formik.values.content.trim() || (formik.values.content === content && !formik.errors.content)}
-                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    {formik.isSubmitting ? (
-                      <>
-                        <span className="inline-block animate-spin mr-2">
-                          ⟳
-                        </span>
-                        Saving...
-                      </>
-                    ) : (
-                      "Update"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

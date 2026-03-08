@@ -53,7 +53,7 @@ export default function SignHero({title,titleMin,text}) {
 
   return (
     <div
-      className="  min-h-screen px-10 py-10 flex flex-col justify-between  text-white bg-cover bg-center "
+      className="hidden lg:flex min-h-screen px-10 py-10 flex-col justify-between text-white bg-cover bg-center"
       style={{ backgroundImage: "linear-gradient(#1447e6cc,#1447e6cc),url(/bg-social.png)" }}
     >
       {/* HEADER */}

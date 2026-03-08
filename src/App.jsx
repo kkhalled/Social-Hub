@@ -8,6 +8,8 @@ import NotFound from "./pages/NotFound/NotFound";
 import Profile from "./pages/Profile/Profile";
 import Bookmarks from "./pages/Bookmarks/Bookmarks";
 import UserProfile from "./pages/UserProfile/UserProfile";
+import Notifications from "./pages/Notifications/Notifications";
+import Community from "./pages/Community/Community";
 import AuthProvider from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import AuthRoute from "./components/AuthRoute/AuthRoute";
@@ -63,6 +65,22 @@ function App() {
       element: (
         <ProtectedRoute>
           <Bookmarks />
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/notifications",
+      element: (
+        <ProtectedRoute>
+          <Notifications />
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/community",
+      element: (
+        <ProtectedRoute>
+          <Community />
         </ProtectedRoute>
       )
     },

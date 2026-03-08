@@ -1,5 +1,5 @@
 
-import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { useFormik } from 'formik';
 import React, { useContext, useState } from 'react';
@@ -20,14 +20,9 @@ export default function useLogIn(){
 
   const signInSchema = yup.object({
 
-    email: yup
+    login: yup
       .string()
-      .email(" email is invalid ")
-      .matches(
-        /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
-        "email must include domain like .com"
-      )
-      .required("email is required"),
+      .required("email or username is required"),
 
     password: yup
       .string()
@@ -72,7 +67,7 @@ export default function useLogIn(){
   const formik = useFormik({
     initialValues: {
     
-      email: "",
+      login: "",
       password: "",
   
     },
@@ -84,21 +79,21 @@ export default function useLogIn(){
 
   // Clear server error when user starts typing
   React.useEffect(() => {
-    if ((formik.values.email || formik.values.password) && invalidPassword) {
+    if ((formik.values.login || formik.values.password) && invalidPassword) {
       setinvalidPassword(null);
     }
-  }, [formik.values.email, formik.values.password]);
+  }, [formik.values.login, formik.values.password]);
   // console.log(formik);
 
   //  label , icon , palceholder ,name -value - id
   const formInputs = [
  
     {
-      label: "Email Address",
-      id: "email",
-      type: "email",
+      label: "Email or Username",
+      id: "login",
+      type: "text",
       icon: faEnvelope,
-      placeholder: "name@example.com",
+      placeholder: "name@example.com or username",
     },
     {
       label: "Password",

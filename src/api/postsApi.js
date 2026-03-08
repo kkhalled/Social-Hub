@@ -62,8 +62,8 @@ export const toggleBookmarkPost = async (postId) => {
 };
 
 // Share post
-export const sharePost = async (postId) => {
-  const { data } = await axiosInstance.post(`/posts/${postId}/share`);
+export const sharePost = async (postId, body = "") => {
+  const { data } = await axiosInstance.post(`/posts/${postId}/share`, body ? { body } : {});
   return data;
 };
 
