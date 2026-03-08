@@ -45,7 +45,8 @@ export default function FormInput({ label, id, icon, placeholder, type,formik,ex
           </div>
         </div>
          { formik.errors[id] && formik.touched[id] ? <p className="text-red-500 -mt-3 text-[12px]"> * {formik.errors[id]}</p> : ""}
-         {(type==="email" && existErrorMsg) ? <p className="text-red-500 -mt-3 text-[12px]"> * {existErrorMsg}</p> : ""}  
+         {(id==="username" && existErrorMsg && existErrorMsg.toLowerCase().includes("username")) ? <p className="text-red-500 -mt-3 text-[12px]"> * {existErrorMsg}</p> : ""}  
+         {(type==="email" && existErrorMsg && existErrorMsg.toLowerCase().includes("email")) ? <p className="text-red-500 -mt-3 text-[12px]"> * {existErrorMsg}</p> : ""}  
          {(type==="password" && invalidPassword) ? <p className="text-red-500 -mt-3 text-[12px]"> * {invalidPassword}</p> : ""}  
         
     
