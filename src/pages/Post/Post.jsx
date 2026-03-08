@@ -6,8 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import PostSkeleton from "../../components/PostSkeleton/PostSkeleton";
-import PostDetails from "../../components/PostDetails/PostDetails";
+import PostSkeleton from "../../components/posts/PostSkeleton";
+import PostDetails from "../../components/posts/PostDetails";
 import EditPost from "../../components/EditPost/EditPost";
 import NavBar from "../../components/NavBar/NavBar";
 

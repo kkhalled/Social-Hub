@@ -1,13 +1,19 @@
 import React, { useContext } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faNewspaper, faUserGroup, faRss, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import PostDetails from "../PostDetails/PostDetails";
-import FeedSkeleton from "../FeedLoading/FeedSkeleton";
+import {
+  faNewspaper,
+  faUserGroup,
+  faRss,
+  faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
+import PostDetails from "../posts/PostDetails";
+import FeedSkeleton from "./FeedSkeleton";
 import { PostsContext } from "../../context/PostProvider";
 import { AuthContext } from "../../context/AuthContext";
 
 export default function Feed() {
-  const { posts, feedType, setFeedType, loadMore, hasMore, loadingMore } = useContext(PostsContext);
+  const { posts, feedType, setFeedType, loadMore, hasMore, loadingMore } =
+    useContext(PostsContext);
   const { user } = useContext(AuthContext);
 
   const TABS = [
@@ -44,10 +50,15 @@ export default function Feed() {
             {posts.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
                 <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FontAwesomeIcon icon={faNewspaper} className="text-2xl text-blue-400" />
+                  <FontAwesomeIcon
+                    icon={faNewspaper}
+                    className="text-2xl text-blue-400"
+                  />
                 </div>
                 <h3 className="text-lg font-bold text-gray-800 mb-1">
-                  {feedType === "following" ? "No posts from people you follow" : "No posts yet"}
+                  {feedType === "following"
+                    ? "No posts from people you follow"
+                    : "No posts yet"}
                 </h3>
                 <p className="text-sm text-gray-400 max-w-xs mx-auto">
                   {feedType === "following"
@@ -59,7 +70,9 @@ export default function Feed() {
               posts.map((post) => {
                 const meId = user?._id || user?.id;
                 const isLiked = Array.isArray(post.likes)
-                  ? post.likes.some((l) => (typeof l === "string" ? l : l._id) === meId)
+                  ? post.likes.some(
+                      (l) => (typeof l === "string" ? l : l._id) === meId,
+                    )
                   : false;
 
                 return (
@@ -99,7 +112,11 @@ export default function Feed() {
               >
                 {loadingMore ? (
                   <>
-                    <FontAwesomeIcon icon={faSpinner} spin className="text-xs" />
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      spin
+                      className="text-xs"
+                    />
                     Loading...
                   </>
                 ) : (

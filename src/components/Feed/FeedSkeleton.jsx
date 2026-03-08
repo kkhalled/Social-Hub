@@ -1,4 +1,4 @@
-import PostSkeleton from "../PostSkeleton/PostSkeleton";
+import PostSkeleton from "../posts/PostSkeleton";
 
 
 export default function FeedSkeleton() {

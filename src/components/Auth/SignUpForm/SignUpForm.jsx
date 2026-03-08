@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import SocialBtns from "../Ui/SocialBtns/SocialBtns";
-import Divider from "../Ui/Divider/Divider";
-import FormInput from "../Ui/FormInput/FormInput";
+import SocialBtns from "../../Ui/SocialBtns/SocialBtns";
+import Divider from "../../Ui/Divider/Divider";
+import FormInput from "../../Ui/FormInput/FormInput";
 import * as yup from "yup";
 import {
   faCalendar,
@@ -15,13 +15,11 @@ import {
   faVenusMars,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useFormik } from "formik";
-import { toast, ToastContainer } from "react-toastify";
-import axiosInstance from "../../api/axiosInstance";
-import useSignUp from "../../hooks/useSignUp";
+
+import useSignUp from "../../../hooks/useSignUp";
 
 export default function SignUpForm() {
-  const {formik , existErrorMsg ,formInputs ,setExistErrorMsg} = useSignUp();
+  const { formik, existErrorMsg, formInputs, setExistErrorMsg } = useSignUp();
   return (
     <>
       <div className="bg-white shadow-lg rounded-2xl w-full max-w-md mx-auto px-6 py-8 text-sm my-auto">

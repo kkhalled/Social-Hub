@@ -14,5 +14,27 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core libraries
+          'react-vendor': ['react', 'react-dom', 'react-router'],
+          // Form libraries
+          'form-vendor': ['formik', 'yup'],
+          // UI libraries
+          'ui-vendor': [
+            '@fortawesome/react-fontawesome',
+            '@fortawesome/free-solid-svg-icons',
+            '@fortawesome/free-regular-svg-icons',
+            'react-toastify'
+          ],
+          // API client
+          'api-vendor': ['axios']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600 // Slightly increased limit for vendor chunks
   }
 });

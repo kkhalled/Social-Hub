@@ -1,18 +1,31 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { Bounce, ToastContainer } from "react-toastify";
-import Home from "./pages/Home/Home";
-import LogIn from "./pages/LogIn/LogIn";
-import SignUp from "./pages/SignUp/SignUp";
-import Post from "./pages/Post/Post";
-import NotFound from "./pages/NotFound/NotFound";
-import Profile from "./pages/Profile/Profile";
-import Bookmarks from "./pages/Bookmarks/Bookmarks";
-import UserProfile from "./pages/UserProfile/UserProfile";
-import Notifications from "./pages/Notifications/Notifications";
-import Community from "./pages/Community/Community";
 import AuthProvider from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import AuthRoute from "./components/AuthRoute/AuthRoute";
+
+// Lazy load all page components for code splitting
+const Home = lazy(() => import("./pages/Home/Home"));
+const LogIn = lazy(() => import("./pages/LogIn/LogIn"));
+const SignUp = lazy(() => import("./pages/SignUp/SignUp"));
+const Post = lazy(() => import("./pages/Post/Post"));
+const Profile = lazy(() => import("./pages/Profile/Profile"));
+const Bookmarks = lazy(() => import("./pages/Bookmarks/Bookmarks"));
+const UserProfile = lazy(() => import("./pages/UserProfile/UserProfile"));
+const Notifications = lazy(() => import("./pages/Notifications/Notifications"));
+const Community = lazy(() => import("./pages/Community/Community"));
+const NotFound = lazy(() => import("./pages/NotFound/NotFound"));
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center">
+      <div className="inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <p className="mt-4 text-gray-600 font-medium">Loading...</p>
+    </div>
+  </div>
+);
 
 function App() {
   const router = createBrowserRouter([
@@ -93,7 +106,9 @@ function App() {
   return (
     <>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <Suspense fallback={<PageLoader />}>
+          <RouterProvider router={router} />
+        </Suspense>
         <ToastContainer
           position="top-right"
           autoClose={1500}

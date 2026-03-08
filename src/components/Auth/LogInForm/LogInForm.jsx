@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import SocialBtns from "../Ui/SocialBtns/SocialBtns";
-import Divider from "../Ui/Divider/Divider";
-import FormInput from "../Ui/FormInput/FormInput";
+import SocialBtns from "../../Ui/SocialBtns/SocialBtns";
+import Divider from "../../Ui/Divider/Divider";
+import FormInput from "../../Ui/FormInput/FormInput";
 
 import {
   faCalendar,
@@ -16,7 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-import useLogIn from "../../hooks/useLogIn";
+import useLogIn from "../../../hooks/useLogIn";
 
 export default function LogInForm() {
   const { formik, formInputs, invalidPassword } = useLogIn();

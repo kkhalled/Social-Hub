@@ -1,4 +1,4 @@
-import CommentSkeleton from "../CommentSkeleton/CommentSkeleton";
+import CommentSkeleton from "../comments/CommentSkeleton";
 
 export default function PostSkeleton() {
   return (

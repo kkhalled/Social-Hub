@@ -1,106 +1,58 @@
-import React, { useContext, useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faImage,
-  faPaperPlane,
-  faXmark,
-} from "@fortawesome/free-solid-svg-icons";
-import { AuthContext } from "./../../context/AuthContext";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import axiosInstance from "../../api/axiosInstance";
-import { PostsContext } from "../../context/PostProvider";
-import { toast } from "react-toastify";
+import React, { useContext, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { AuthContext } from "../../context/AuthContext";
+import { PostsContext } from "../../context/PostProvider";
+import { usePostForm } from "../../hooks/usePostForm";
+import ImageUploader from "../shared/ImageUploader";
+import defaultAvatar from "../../assets/user.png";
 
+/**
+ * EditPost Component
+ * Form for editing an existing post
+ */
 export default function EditPost({ post, userPhoto, userName }) {
-  const { token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const postsContext = useContext(PostsContext);
   const getAllPosts = postsContext?.getAllPosts;
   const navigate = useNavigate();
 
-  const validationSchema = Yup.object({
-    body: Yup.string()
-      .min(5, "Post is too short")
-      .max(280, "Post is too long")
-      .required("Post cannot be empty"),
-    image: Yup.mixed()
-      .nullable()
-      .test("fileSize", "Image is too large", (value) => {
-        if (!value) return true; // Image is optional
-        return value.size <= 5 * 1024 * 1024; // 5MB
-      })
-      .test("fileType", "Unsupported file format", (value) => {
-        if (!value) return true; // Image is optional
-        return ["image/jpeg", "image/png", "image/gif"].includes(value.type);
-      }),
-  });
-
-  const [imagePreview, setImagePreview] = useState(post?.image || null);
-  const [isNewImage, setIsNewImage] = useState(false);
-
-  async function handleSubmit(values) {
-    const formData = new FormData();
-
-    try {
-      formData.append("body", values.body);
-      if (isNewImage && values.image) {
-        formData.append("image", values.image);
-      }
-      const options = {
-        url: `/posts/${post._id || post.id}`,
-        method: "PUT",
-        data: formData,
-      };
-      const response = await axiosInstance(options);
-      console.log("Post updated successfully:", response.data);
-      if (response.data.message === "success") {
-        toast.success("Post updated successfully");
-        if (getAllPosts) {
-          getAllPosts();
-        }
-        // Navigate back to post view
-        navigate(`/`);
-      }
-    } catch (error) {
-      console.log("Error updating post:", error);
-      toast.error("Failed to update post");
-    }
-  }
-
-  const removeImage = () => {
-    formik.setFieldValue("image", null);
-    setImagePreview(null);
-    setIsNewImage(false);
-  };
-
-  const formik = useFormik({
+  // Use custom hook for form management
+  const { formik, imagePreview, handleImageChange, removeImage } = usePostForm({
     initialValues: {
       body: post?.body || "",
-      image: null,
+      imagePreview: post?.image || null,
     },
-    enableReinitialize: true,
-    validationSchema: validationSchema,
-    onSubmit: handleSubmit,
+    mode: 'edit',
+    postId: post?._id || post?.id,
+    onSuccess: () => {
+      if (getAllPosts) getAllPosts();
+      // Navigate back to post view (remove edit mode)
+      navigate(`/post/${post?._id || post?.id}`);
+    },
   });
 
-  // Update image preview when post image changes
+  // Update image preview when post changes
   useEffect(() => {
-    if (post?.image && !isNewImage) {
-      setImagePreview(post.image);
+    if (post?.image && !imagePreview) {
+      // Set initial image from post
     }
-  }, [post?.image, isNewImage]);
+  }, [post?.image, imagePreview]);
 
   return (
     <div className="max-w-3xl mx-auto mt-6 mb-6 px-4 sm:px-0">
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
-        {/* Header */}
-        <form action="" onSubmit={formik.handleSubmit}>
+        <form onSubmit={formik.handleSubmit}>
+          {/* Header */}
           <div className="px-5 py-4 flex gap-3">
             <img
-              src={userPhoto || post?.user?.photo || "/default-avatar.png"}
+              src={userPhoto || post?.user?.photo || defaultAvatar}
               alt={userName || post?.user?.name}
-              onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = defaultAvatar;
+              }}
               className="w-11 h-11 rounded-full object-cover"
             />
             <div className="flex-1">
@@ -108,93 +60,56 @@ export default function EditPost({ post, userPhoto, userName }) {
                 value={formik.values.body}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                error={formik.errors.body}
                 name="body"
                 rows={4}
                 placeholder={`What's on your mind?`}
-                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl
-              focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10
-              resize-none outline-none text-sm "
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none outline-none text-sm"
               />
 
-              {/* Image preview - show existing image or new preview */}
-              {imagePreview && !formik.errors.image && (
-                <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 relative">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full max-h-72 object-cover"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={removeImage }
-                    className="absolute top-2 right-2 w-8 h-8 bg-black/70 text-white rounded-full
-                  flex items-center justify-center hover:bg-black transition cursor-pointer"
-                  >
-                    <FontAwesomeIcon icon={faXmark} />
-                  </button>
-                </div>
-              )}
-
-              {/* Textbox */}
+              {/* Image Preview */}
+              <ImageUploader
+                imagePreview={imagePreview || (post?.image)}
+                onImageChange={handleImageChange}
+                onRemoveImage={removeImage}
+                error={formik.errors.image}
+                showButton={false}
+              />
             </div>
           </div>
 
-          {/* Footer actions */}
+          {/* Errors */}
+          {formik.errors.body && formik.touched.body && (
+            <div className="px-5 pb-2">
+              <p className="text-red-500 text-xs">{formik.errors.body}</p>
+            </div>
+          )}
+
+          {/* Footer Actions */}
           <div className="px-5 py-5 border-t border-gray-300/20 bg-gray-50">
-            <div className=" flex items-center justify-between">
-              {/* Left actions */}
-              <div className="flex items-center gap-2">
-                {/* Add photo */}
-                <label className="cursor-pointer">
-                  <input
-                    className="hidden"
-                    type="file"
-                    accept="image/*"
-                    name="image"
-                    id="image"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        formik.setFieldValue("image", file);
-                        setImagePreview(URL.createObjectURL(file));
-                        setIsNewImage(true);
-                      }
-                    }}
-                    onBlur={formik.handleBlur}
-                    error={formik.errors.image}
-                  />
+            <div className="flex items-center justify-between">
+              {/* Image Upload Button */}
+              <ImageUploader
+                imagePreview={null}
+                onImageChange={handleImageChange}
+                onRemoveImage={removeImage}
+                buttonText="Photo"
+                buttonClassName=""
+              />
 
-                  <div
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200
-              bg-white hover:border-blue-200 hover:bg-blue-50 transition text-sm"
-                  >
-                    <FontAwesomeIcon icon={faImage} className="text-blue-500" />
-                    <span className="text-gray-700">Photo</span>
-                  </div>
-                </label>
-              </div>
-
-              {/* Update button */}
+              {/* Update Button */}
               <button
                 type="submit"
-                disabled={!formik.values.body.trim()}
-                className={`flex items-center gap-2 px-5 py-2 rounded-xl font-semibold text-white
-            transition ${
-              formik.values.body.trim()
-                ? "bg-blue-600 hover:bg-blue-700 active:scale-95"
-                : "bg-gray-300 cursor-not-allowed"
-            }`}
+                disabled={!formik.values.body.trim() || formik.isSubmitting}
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl font-semibold text-white transition ${
+                  formik.values.body.trim() && !formik.isSubmitting
+                    ? "bg-blue-600 hover:bg-blue-700 active:scale-95"
+                    : "bg-gray-300 cursor-not-allowed"
+                }`}
               >
-                <span>Update</span>
                 <FontAwesomeIcon icon={faPaperPlane} />
+                <span>Update</span>
               </button>
             </div>
-            <span className="text-red-500 text-sm lowercase">
-              {formik.errors.body}
-            </span>
-            <span className="text-red-500 text-sm">{formik.errors.image}</span>
           </div>
         </form>
       </div>
